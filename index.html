@@ -1,0 +1,3921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FedAnalytics · Federated Learning Platform</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+/* ============================================================
+   1. RESET
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; }
+* { margin: 0; padding: 0; }
+html, body { height: 100%; }
+button, input, select, textarea { font: inherit; color: inherit; background: none; border: none; }
+button { cursor: pointer; }
+ul, ol { list-style: none; }
+table { border-collapse: collapse; width: 100%; }
+svg { display: block; }
+a { color: inherit; text-decoration: none; }
+
+/* ============================================================
+   2. DESIGN TOKENS
+   ============================================================ */
+:root {
+  --bg: #0D1117;
+  --surface: #161B22;
+  --surface-2: #1C2128;
+  --surface-3: #21262D;
+
+  --border: #30363D;
+  --border-muted: #21262D;
+  --border-focus: #2F81F7;
+
+  --fg: #E6EDF3;
+  --fg-muted: #8B949E;
+  --fg-subtle: #6E7681;
+  --fg-inverse: #0D1117;
+
+  --accent: #2F81F7;
+  --accent-hover: #4C8FF8;
+  --accent-subtle: rgba(47,129,247,0.12);
+  --success: #3FB950;
+  --success-subtle: rgba(63,185,80,0.12);
+  --warning: #D29922;
+  --warning-subtle: rgba(210,153,34,0.12);
+  --danger: #F85149;
+  --danger-subtle: rgba(248,81,73,0.12);
+  --purple: #A371F7;
+  --purple-subtle: rgba(163,113,247,0.12);
+
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 12px;
+
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px;
+  --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-10: 40px;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", "Consolas", monospace;
+
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+
+  --sidebar-w: 232px;
+  --topbar-h: 56px;
+}
+
+/* ============================================================
+   3. BASE
+   ============================================================ */
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.mono { font-family: var(--font-mono); font-feature-settings: "tnum","zero"; }
+.tnum { font-variant-numeric: tabular-nums; }
+
+/* ============================================================
+   4. LAYOUT
+   ============================================================ */
+.app {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+  min-height: 100vh;
+}
+
+.shell {
+  display: grid;
+  grid-template-rows: var(--topbar-h) 1fr;
+  min-width: 0;
+}
+
+main.content {
+  padding: 24px 32px 64px;
+  overflow-y: auto;
+  max-width: 1440px;
+  width: 100%;
+}
+
+/* ============================================================
+   5. SIDEBAR
+   ============================================================ */
+.sidebar {
+  background: var(--bg);
+  border-right: 1px solid var(--border-muted);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+}
+
+.ws-switcher {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-muted);
+  cursor: pointer;
+  transition: background 120ms var(--ease);
+}
+.ws-switcher:hover { background: var(--surface); }
+
+.ws-mark {
+  width: 26px; height: 26px;
+  border-radius: var(--r-sm);
+  background: linear-gradient(135deg, var(--accent) 0%, #5C4EE5 100%);
+  display: grid; place-items: center;
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  flex-shrink: 0;
+}
+
+.ws-info { flex: 1; min-width: 0; }
+.ws-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ws-meta {
+  font-size: 11px;
+  color: var(--fg-subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ws-chevron { color: var(--fg-subtle); flex-shrink: 0; }
+
+.nav {
+  padding: 12px 8px;
+  overflow-y: auto;
+}
+
+.nav-section {
+  padding: 12px 8px 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--fg-subtle);
+  user-select: none;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: var(--r-sm);
+  color: var(--fg-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+  transition: background 120ms var(--ease), color 120ms var(--ease);
+  position: relative;
+}
+.nav-item:hover { background: var(--surface); color: var(--fg); }
+.nav-item.active {
+  background: var(--surface-2);
+  color: var(--fg);
+}
+.nav-item.active::before {
+  content: "";
+  position: absolute;
+  left: -8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 14px;
+  border-radius: 1px;
+  background: var(--accent);
+}
+
+.nav-icon {
+  width: 16px; height: 16px;
+  flex-shrink: 0;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.85;
+}
+
+.nav-count {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: var(--surface-3);
+  color: var(--fg-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.sidebar-footer {
+  padding: 12px;
+  border-top: 1px solid var(--border-muted);
+}
+
+.env-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  font-size: 11px;
+  color: var(--fg-muted);
+}
+
+.env-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 0 3px rgba(63,185,80,0.15);
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   6. TOPBAR
+   ============================================================ */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--border-muted);
+  background: var(--bg);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--fg-muted);
+}
+.crumbs .sep { color: var(--fg-subtle); user-select: none; }
+.crumbs .current { color: var(--fg); font-weight: 500; }
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-btn {
+  width: 30px; height: 30px;
+  border-radius: var(--r-sm);
+  display: grid; place-items: center;
+  color: var(--fg-muted);
+  transition: background 120ms var(--ease), color 120ms var(--ease);
+}
+.icon-btn:hover { background: var(--surface); color: var(--fg); }
+.icon-btn svg { width: 15px; height: 15px; }
+
+.avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #5C4EE5, var(--accent));
+  display: grid; place-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+  margin-left: 8px;
+  cursor: pointer;
+}
+
+/* ============================================================
+   7. VIEWS
+   ============================================================ */
+.view { display: none; }
+.view.active { display: block; animation: fadeIn 180ms var(--ease); }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.page-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+  gap: 16px;
+}
+.page-head h1 {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-bottom: 2px;
+}
+.page-head .sub {
+  font-size: 13px;
+  color: var(--fg-muted);
+}
+.page-head .actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   8. COMPONENTS
+   ============================================================ */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border-muted);
+  border-radius: var(--r-md);
+}
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-muted);
+}
+.card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg);
+}
+.card-sub {
+  font-size: 12px;
+  color: var(--fg-muted);
+  font-weight: 400;
+  margin-top: 2px;
+}
+.card-body { padding: 16px; }
+.card-body.flush { padding: 0; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--fg);
+  transition: background 120ms var(--ease), border-color 120ms var(--ease);
+  white-space: nowrap;
+}
+.btn:hover { background: var(--surface-3); border-color: #3E454E; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn svg { width: 13px; height: 13px; }
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+.btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--fg-muted);
+}
+.btn-ghost:hover { background: var(--surface-2); color: var(--fg); }
+
+.btn-sm { height: 26px; padding: 0 10px; font-size: 11px; }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 500;
+  background: var(--surface-3);
+  color: var(--fg-muted);
+  border: 1px solid var(--border-muted);
+  white-space: nowrap;
+}
+.badge .dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.badge-accent { background: var(--accent-subtle); color: var(--accent); border-color: rgba(47,129,247,0.25); }
+.badge-success { background: var(--success-subtle); color: var(--success); border-color: rgba(63,185,80,0.25); }
+.badge-warning { background: var(--warning-subtle); color: var(--warning); border-color: rgba(210,153,34,0.25); }
+.badge-danger { background: var(--danger-subtle); color: var(--danger); border-color: rgba(248,81,73,0.25); }
+.badge-purple { background: var(--purple-subtle); color: var(--purple); border-color: rgba(163,113,247,0.25); }
+
+.metric {
+  background: var(--surface);
+  border: 1px solid var(--border-muted);
+  border-radius: var(--r-md);
+  padding: 14px 16px;
+}
+.metric-label {
+  font-size: 11px;
+  color: var(--fg-muted);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.metric-value {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.metric-value .unit {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg-muted);
+  margin-left: 3px;
+}
+.metric-foot {
+  font-size: 11px;
+  color: var(--fg-muted);
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-variant-numeric: tabular-nums;
+}
+.metric-foot .up { color: var(--success); }
+.metric-foot .down { color: var(--danger); }
+
+.grid { display: grid; gap: 12px; }
+.g-2 { grid-template-columns: repeat(2, 1fr); }
+.g-3 { grid-template-columns: repeat(3, 1fr); }
+.g-4 { grid-template-columns: repeat(4, 1fr); }
+
+.table-wrap { overflow-x: auto; }
+table.data { font-size: 12.5px; }
+table.data th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--fg-subtle);
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border-muted);
+  white-space: nowrap;
+  background: var(--surface);
+  position: sticky;
+  top: 0;
+}
+table.data td {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-muted);
+  color: var(--fg-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+table.data tr:last-child td { border-bottom: none; }
+table.data tr:hover td { background: rgba(255,255,255,0.015); }
+table.data td.strong { color: var(--fg); font-weight: 500; }
+table.data .num { text-align: right; }
+table.data .right { text-align: right; }
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  height: 30px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: 12px;
+}
+.field label {
+  color: var(--fg-subtle);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+}
+.field select,
+.field input {
+  color: var(--fg);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  font-variant-numeric: tabular-nums;
+}
+.field select option { background: var(--surface-2); color: var(--fg); }
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: var(--surface-3);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--fg);
+  border: 2px solid var(--bg);
+  cursor: pointer;
+  transition: transform 120ms var(--ease);
+}
+input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+input[type="range"]::-moz-range-thumb {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--fg);
+  border: 2px solid var(--bg);
+  cursor: pointer;
+}
+
+.chart-box { position: relative; width: 100%; }
+.chart-box.h-200 { height: 200px; }
+.chart-box.h-240 { height: 240px; }
+.chart-box.h-300 { height: 300px; }
+.chart-box.h-360 { height: 360px; }
+
+.progress {
+  height: 4px;
+  background: var(--surface-3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 300ms var(--ease);
+}
+
+.divider {
+  height: 1px;
+  background: var(--border-muted);
+  margin: 16px 0;
+}
+
+.empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--fg-muted);
+}
+.empty-icon {
+  width: 40px; height: 40px;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  border: 1px solid var(--border-muted);
+  display: grid; place-items: center;
+  margin: 0 auto 12px;
+  color: var(--fg-subtle);
+}
+.empty h3 {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fg);
+  margin-bottom: 4px;
+}
+.empty p { font-size: 12px; }
+
+/* ============================================================
+   9. COMMAND CENTER
+   ============================================================ */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.dash-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.activity-list { padding: 4px 0; }
+.activity-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-muted);
+  font-size: 12.5px;
+}
+.activity-item:last-child { border-bottom: none; }
+.activity-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  margin-top: 7px;
+  flex-shrink: 0;
+}
+.activity-dot.ok { background: var(--success); }
+.activity-dot.info { background: var(--accent); }
+.activity-dot.warn { background: var(--warning); }
+.activity-body { flex: 1; min-width: 0; }
+.activity-text { color: var(--fg); line-height: 1.4; }
+.activity-text strong { font-weight: 500; }
+.activity-meta {
+  font-size: 11px;
+  color: var(--fg-subtle);
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================
+   10. TOPOLOGY
+   ============================================================ */
+.topology-wrap {
+  position: relative;
+  width: 100%;
+  height: 480px;
+  background:
+    radial-gradient(circle at center, rgba(47,129,247,0.04) 0%, transparent 55%),
+    var(--bg);
+  border: 1px solid var(--border-muted);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+.topology-wrap::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+
+#topology-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+.topo-node { cursor: pointer; transition: opacity 200ms var(--ease); }
+
+.topo-client-rect {
+  fill: var(--surface);
+  stroke: var(--border);
+  stroke-width: 1;
+  transition: fill 200ms var(--ease), stroke 200ms var(--ease);
+}
+.topo-client.active .topo-client-rect {
+  stroke: var(--accent);
+  fill: var(--surface-2);
+}
+.topo-client.complete .topo-client-rect {
+  stroke: rgba(63,185,80,0.5);
+}
+.topo-client.error .topo-client-rect {
+  stroke: rgba(248,81,73,0.5);
+}
+
+.topo-client-label {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  fill: var(--fg-muted);
+  pointer-events: none;
+  user-select: none;
+}
+.topo-client.active .topo-client-label { fill: var(--fg); }
+
+.topo-client-meta {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  fill: var(--fg-subtle);
+  pointer-events: none;
+  user-select: none;
+}
+
+.topo-server-rect {
+  fill: var(--surface-2);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  transition: filter 200ms var(--ease);
+}
+.topo-server.active .topo-server-rect {
+  filter: drop-shadow(0 0 12px rgba(47,129,247,0.45));
+}
+
+.topo-server-label {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  fill: var(--fg);
+  pointer-events: none;
+  user-select: none;
+  text-anchor: middle;
+}
+.topo-server-meta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  fill: var(--fg-subtle);
+  text-anchor: middle;
+  pointer-events: none;
+  user-select: none;
+}
+
+.topo-path {
+  fill: none;
+  stroke: var(--border-muted);
+  stroke-width: 1;
+}
+.topo-path.active {
+  stroke: rgba(47,129,247,0.5);
+  stroke-width: 1.5;
+}
+.topo-path.complete {
+  stroke: rgba(63,185,80,0.35);
+}
+
+.packet {
+  fill: var(--accent);
+  pointer-events: none;
+}
+.packet.return { fill: var(--success); }
+
+/* ============================================================
+   11. TRAINING VIEW
+   ============================================================ */
+.train-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border-muted);
+  border-radius: var(--r-md);
+  margin-bottom: 12px;
+}
+.train-toolbar .spacer { flex: 1; }
+
+.train-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr 300px;
+  gap: 12px;
+}
+
+.side-panel { display: flex; flex-direction: column; gap: 12px; }
+
+.metric-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-muted);
+  font-size: 12.5px;
+}
+.metric-row:last-child { border-bottom: none; }
+.metric-row .k { color: var(--fg-muted); }
+.metric-row .v {
+  color: var(--fg);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.event-log {
+  height: 340px;
+  overflow-y: auto;
+  padding: 4px 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.7;
+}
+.event-row {
+  display: grid;
+  grid-template-columns: 52px 20px 1fr;
+  gap: 8px;
+  padding: 2px 12px;
+  color: var(--fg-muted);
+  animation: eventIn 200ms var(--ease);
+}
+@keyframes eventIn {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.event-row .t { color: var(--fg-subtle); }
+.event-row .lvl { text-align: center; }
+.event-row .lvl.info { color: var(--accent); }
+.event-row .lvl.ok { color: var(--success); }
+.event-row .lvl.warn { color: var(--warning); }
+.event-row .msg { color: var(--fg-muted); }
+.event-row .msg strong { color: var(--fg); font-weight: 500; }
+
+/* ============================================================
+   12. PRIVACY VIEW
+   ============================================================ */
+.privacy-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 12px;
+}
+
+.epsilon-display {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.epsilon-value {
+  font-size: 34px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: var(--fg);
+  line-height: 1;
+}
+.epsilon-label {
+  font-size: 12px;
+  color: var(--fg-muted);
+  font-weight: 500;
+}
+
+.compliance-list { display: flex; flex-direction: column; gap: 8px; }
+.compliance-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border-muted);
+  background: var(--surface-2);
+  font-size: 12px;
+}
+.compliance-item .check {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--success-subtle);
+  color: var(--success);
+  display: grid; place-items: center;
+  flex-shrink: 0;
+}
+.compliance-item .check svg { width: 10px; height: 10px; stroke-width: 3; }
+.compliance-item .label { flex: 1; color: var(--fg); }
+.compliance-item .meta { color: var(--fg-subtle); font-size: 11px; }
+
+/* ============================================================
+   13. VALUE MODEL VIEW
+   ============================================================ */
+.bm-nav {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--surface);
+  border: 1px solid var(--border-muted);
+  border-radius: var(--r-md);
+  margin-bottom: 16px;
+  width: fit-content;
+  overflow-x: auto;
+  max-width: 100%;
+}
+.bm-nav-item {
+  height: 26px;
+  padding: 0 12px;
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fg-muted);
+  transition: background 120ms var(--ease), color 120ms var(--ease);
+  white-space: nowrap;
+}
+.bm-nav-item:hover { color: var(--fg); }
+.bm-nav-item.active {
+  background: var(--surface-3);
+  color: var(--fg);
+}
+
+.bm-panel { display: none; }
+.bm-panel.active { display: block; animation: fadeIn 180ms var(--ease); }
+
+.mb-12 { margin-bottom: 12px; }
+
+.taxo-table .c { text-align: center; }
+.taxo-table .row-primary { background: rgba(47,129,247,0.03); }
+.taxo-table .row-primary td:first-child { box-shadow: inset 2px 0 0 var(--accent); }
+
+.score {
+  display: inline-block;
+  width: 40px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface-3);
+  position: relative;
+  overflow: hidden;
+}
+.score::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 0%;
+  background: var(--accent);
+  border-radius: 3px;
+}
+.score.s-1::after { width: 20%; background: var(--danger); }
+.score.s-2::after { width: 40%; background: var(--warning); }
+.score.s-3::after { width: 60%; background: var(--accent); }
+.score.s-4::after { width: 80%; background: var(--accent); }
+.score.s-5::after { width: 100%; background: var(--success); }
+
+.footnote {
+  font-size: 12px;
+  color: var(--fg-muted);
+  line-height: 1.6;
+}
+.footnote strong { color: var(--fg); font-weight: 600; }
+
+.bb-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.bb {
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-muted);
+  border-radius: var(--r-sm);
+}
+.bb-key {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fg-subtle);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.bb-val {
+  font-size: 12px;
+  color: var(--fg);
+  line-height: 1.5;
+}
+
+.value-network-wrap {
+  padding: 24px;
+  background: var(--bg);
+  border-radius: var(--r-md);
+}
+#value-network { width: 100%; height: auto; max-height: 520px; }
+.vn-label {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  fill: var(--fg-subtle);
+  font-weight: 500;
+}
+.vn-node-title {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  fill: var(--fg);
+}
+.vn-node-meta {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  fill: var(--fg-subtle);
+}
+.vn-node-sub {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  fill: var(--fg-muted);
+}
+.vn-role-label {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  fill: var(--fg-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.legend-inline {
+  display: flex;
+  gap: 16px;
+  font-size: 11px;
+  color: var(--fg-muted);
+}
+.legend-inline span { display: inline-flex; align-items: center; gap: 6px; }
+.legend-inline i {
+  display: inline-block;
+  width: 10px;
+  height: 2px;
+  border-radius: 1px;
+}
+
+.phase-flow {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  gap: 16px;
+  align-items: stretch;
+}
+.phase-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border-muted);
+  border-radius: var(--r-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+}
+.phase-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-muted);
+  margin-bottom: 12px;
+}
+.phase-num {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-sm);
+  background: var(--surface-3);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.phase-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg);
+  line-height: 1.2;
+}
+.phase-sub {
+  font-size: 11px;
+  color: var(--fg-muted);
+  margin-top: 2px;
+}
+.phase-body { display: flex; flex-direction: column; gap: 12px; flex: 1; }
+.prereq { display: flex; gap: 10px; }
+.prereq-key { flex-shrink: 0; padding-top: 1px; }
+.prereq-val {
+  font-size: 12px;
+  color: var(--fg-muted);
+  line-height: 1.55;
+}
+.prereq-val strong { color: var(--fg); font-weight: 600; }
+.prereq-val em { color: var(--fg); font-style: normal; font-weight: 500; }
+.phase-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-subtle);
+}
+
+@media (max-width: 1180px) {
+  .phase-flow { grid-template-columns: 1fr; }
+  .phase-arrow { transform: rotate(90deg); padding: 8px 0; }
+}
+
+.incentive-grid { display: flex; flex-direction: column; gap: 4px; }
+.incentive-row {
+  display: grid;
+  grid-template-columns: 1fr 40px 1fr;
+  gap: 16px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border-muted);
+  align-items: start;
+}
+.incentive-row:last-child { border-bottom: none; }
+.incentive-problem,
+.incentive-mechanism { display: flex; flex-direction: column; gap: 8px; }
+.incentive-problem-title,
+.incentive-mech-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg);
+  margin-top: 2px;
+}
+.incentive-problem-text,
+.incentive-mech-text {
+  font-size: 12.5px;
+  color: var(--fg-muted);
+  line-height: 1.6;
+}
+.incentive-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg-subtle);
+  font-size: 16px;
+  padding-top: 30px;
+}
+.formula {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--accent);
+  background: var(--bg);
+  border: 1px solid var(--border-muted);
+  border-radius: var(--r-sm);
+  padding: 8px 12px;
+  margin-top: 4px;
+  letter-spacing: 0.02em;
+}
+.formula sub { font-size: 9px; color: var(--fg-muted); }
+.formula sup { font-size: 9px; }
+
+@media (max-width: 920px) {
+  .incentive-row { grid-template-columns: 1fr; }
+  .incentive-arrow { display: none; }
+}
+
+.calc-layout {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 28px;
+}
+@media (max-width: 920px) {
+  .calc-layout { grid-template-columns: 1fr; }
+}
+.calc-controls { display: flex; flex-direction: column; gap: 18px; }
+.slider-group { display: flex; flex-direction: column; gap: 8px; }
+.slider-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.slider-head label {
+  font-size: 12px;
+  color: var(--fg-muted);
+  font-weight: 500;
+}
+.calc-val {
+  font-size: 12px;
+  color: var(--fg);
+  font-weight: 600;
+}
+.slider-hint {
+  font-size: 11px;
+  color: var(--fg-subtle);
+  margin-top: 2px;
+}
+.calc-kpis {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-muted);
+  margin-top: 6px;
+}
+.calc-kpi {
+  padding: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-muted);
+  border-radius: var(--r-sm);
+}
+.calc-kpi-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--fg-subtle);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.calc-kpi-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg);
+}
+.calc-chart { display: flex; flex-direction: column; gap: 16px; }
+.calc-note {
+  font-size: 12px;
+  color: var(--fg-muted);
+  line-height: 1.6;
+  padding: 12px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-muted);
+  border-radius: var(--r-sm);
+}
+.calc-note strong { color: var(--fg); font-weight: 600; }
+
+.pl-subtotal td {
+  background: rgba(47,129,247,0.04);
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.moat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+@media (max-width: 920px) { .moat-grid { grid-template-columns: 1fr; } }
+.moat {
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-muted);
+  border-radius: var(--r-sm);
+}
+.moat-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--r-sm);
+  background: var(--accent-subtle);
+  color: var(--accent);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.moat-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg);
+  margin-bottom: 3px;
+}
+.moat-text {
+  font-size: 12px;
+  color: var(--fg-muted);
+  line-height: 1.5;
+}
+
+/* ============================================================
+   14. TOASTS
+   ============================================================ */
+.toast-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  font-size: 12.5px;
+  color: var(--fg);
+  min-width: 240px;
+  animation: toastIn 200ms var(--ease);
+  pointer-events: auto;
+}
+.toast.leaving { animation: toastOut 200ms var(--ease) forwards; }
+.toast-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.toast.success .toast-icon { color: var(--success); }
+.toast.info .toast-icon { color: var(--accent); }
+.toast.warn .toast-icon { color: var(--warning); }
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes toastOut {
+  to { opacity: 0; transform: translateX(20px); }
+}
+
+/* ============================================================
+   15. FOCUS RINGS
+   ============================================================ */
+button:focus-visible,
+.nav-item:focus-visible,
+.bm-nav-item:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+input[type="range"]:focus-visible { outline-offset: 6px; }
+
+/* ============================================================
+   16. RESPONSIVE
+   ============================================================ */
+@media (max-width: 1180px) {
+  .train-layout { grid-template-columns: 260px 1fr; }
+  .train-layout .side-panel:last-child { grid-column: 1 / -1; }
+  .privacy-layout { grid-template-columns: 1fr; }
+}
+@media (max-width: 920px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { display: none; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .dash-grid { grid-template-columns: 1fr; }
+  .g-4 { grid-template-columns: repeat(2, 1fr); }
+  .g-3 { grid-template-columns: repeat(2, 1fr); }
+  .train-layout { grid-template-columns: 1fr; }
+  main.content { padding: 16px; }
+}
+
+/* ============================================================
+   17. SCROLLBAR
+   ============================================================ */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--surface-3);
+  border-radius: 5px;
+  border: 2px solid var(--bg);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--border); }
+
+/* ============================================================
+   18. PRINT
+   ============================================================ */
+@media print {
+  body { background: white; color: #000; }
+  .sidebar, .topbar, .topbar-actions, .page-head .actions,
+  .bm-nav, .train-toolbar, .toast-container { display: none !important; }
+  .app { display: block; }
+  .shell { display: block; }
+  main.content { padding: 0; max-width: none; }
+  .view { display: none; }
+  .view.active { display: block; }
+  .card {
+    background: white;
+    border-color: #ccc;
+    box-shadow: none;
+    page-break-inside: avoid;
+  }
+  .bm-panel { display: none; }
+  .bm-panel.active { display: block; page-break-inside: avoid; }
+  .metric, .phase-card, .bb, .moat { background: #fafafa; border-color: #e5e5e5; }
+  table.data th { background: #f5f5f5; color: #333; }
+  table.data td { color: #333; border-color: #e5e5e5; }
+  .mono { color: #000; }
+  .badge { border-color: #ccc; color: #333; background: #f5f5f5; }
+  a { color: #000; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ============================================================
+       SIDEBAR
+       ============================================================ -->
+  <aside class="sidebar">
+    <div class="ws-switcher">
+      <div class="ws-mark">FA</div>
+      <div class="ws-info">
+        <div class="ws-name">FedAnalytics</div>
+        <div class="ws-meta">production · eu-west-1</div>
+      </div>
+      <svg class="ws-chevron" width="12" height="12" viewBox="0 0 16 16" fill="none">
+        <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-section">Overview</div>
+      <div class="nav-item active" data-view="command">
+        <svg class="nav-icon" viewBox="0 0 16 16"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+        <span>Command Center</span>
+      </div>
+
+      <div class="nav-section">Operations</div>
+      <div class="nav-item" data-view="training">
+        <svg class="nav-icon" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2"/><circle cx="3" cy="3" r="1.5"/><circle cx="13" cy="3" r="1.5"/><circle cx="3" cy="13" r="1.5"/><circle cx="13" cy="13" r="1.5"/><path d="M4.2 4.2L6.6 6.6M11.8 4.2L9.4 6.6M4.2 11.8L6.6 9.4M11.8 11.8L9.4 9.4"/></svg>
+        <span>Live Training</span>
+        <span class="nav-count" id="nav-train-count">0</span>
+      </div>
+      <div class="nav-item" data-view="experiments">
+        <svg class="nav-icon" viewBox="0 0 16 16"><path d="M3 3h10M5 6h6M7 9h2M8 12h.01"/></svg>
+        <span>Experiments</span>
+        <span class="nav-count">E1–E5</span>
+      </div>
+
+      <div class="nav-section">Governance</div>
+      <div class="nav-item" data-view="privacy">
+        <svg class="nav-icon" viewBox="0 0 16 16"><rect x="3" y="7" width="10" height="7" rx="1.5"/><path d="M5.5 7V5a2.5 2.5 0 015 0v2"/></svg>
+        <span>Privacy &amp; DP</span>
+      </div>
+
+      <div class="nav-section">Business</div>
+      <div class="nav-item" data-view="value">
+        <svg class="nav-icon" viewBox="0 0 16 16"><path d="M2 13V6l4-3 4 3v7M10 13V9l4-2v6"/></svg>
+        <span>Value Model</span>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="env-badge">
+        <span class="env-dot"></span>
+        <span>All systems operational</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============================================================
+       SHELL
+       ============================================================ -->
+  <div class="shell">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div class="crumbs" id="crumbs">
+        <span>FedAnalytics</span>
+        <span class="sep">/</span>
+        <span class="current">Command Center</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="icon-btn" title="Search">
+          <svg viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+        <button class="icon-btn" title="Documentation">
+          <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5"/><path d="M8 11.5v-4M8 5.5v.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+        <div class="avatar">AM</div>
+      </div>
+    </header>
+
+    <main class="content">
+
+      <!-- ==========================================================
+           VIEW: COMMAND CENTER
+           ========================================================== -->
+      <section class="view active" id="view-command">
+        <div class="page-head">
+          <div>
+            <h1>Command Center</h1>
+            <div class="sub">Federated learning operations · last updated <span class="mono" id="cc-time">just now</span></div>
+          </div>
+          <div class="actions">
+            <button class="btn">
+              <svg viewBox="0 0 16 16" fill="none"><path d="M3 8a5 5 0 0110 0M13 8a5 5 0 01-10 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M13 3v5h-5M3 13V8h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Refresh
+            </button>
+            <button class="btn btn-primary" onclick="goTo('training')">
+              <svg viewBox="0 0 16 16" fill="none"><path d="M4 3l9 5-9 5V3z" fill="currentColor"/></svg>
+              New Run
+            </button>
+          </div>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="metric">
+            <div class="metric-label">Federated Accuracy</div>
+            <div class="metric-value">84.2<span class="unit">%</span></div>
+            <div class="metric-foot"><span class="up">▲ 2.4 pp</span> vs. 24h ago</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Active Organizations</div>
+            <div class="metric-value">12<span class="unit">/ 12</span></div>
+            <div class="metric-foot">All responding · median RTT 42 ms</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Privacy Budget (ε)</div>
+            <div class="metric-value">0.42<span class="unit">/ 8.0</span></div>
+            <div class="metric-foot">RDP accountant · δ = 1e-5</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label">Communication Cost</div>
+            <div class="metric-value">2.16<span class="unit">GB</span></div>
+            <div class="metric-foot">Cumulative · 8,420 rounds</div>
+          </div>
+        </div>
+
+        <div class="dash-grid">
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">Model accuracy</div>
+                <div class="card-sub">Federated vs. centralized baseline · last 50 rounds</div>
+              </div>
+              <div style="display:flex; gap:12px; font-size:11px; color:var(--fg-muted)">
+                <span style="display:flex; align-items:center; gap:5px"><span style="width:8px; height:2px; background:var(--accent); border-radius:1px"></span>Federated</span>
+                <span style="display:flex; align-items:center; gap:5px"><span style="width:8px; height:2px; background:var(--fg-subtle); border-radius:1px; border-top:1px dashed"></span>Centralized</span>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="chart-box h-240"><canvas id="chart-cc-acc"></canvas></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div class="card-title">Activity</div>
+              <div class="card-sub">Last 24 hours</div>
+            </div>
+            <div class="activity-list">
+              <div class="activity-item">
+                <span class="activity-dot ok"></span>
+                <div class="activity-body">
+                  <div class="activity-text">Run <strong class="mono">E2-non-iid-α05</strong> completed</div>
+                  <div class="activity-meta">final accuracy 74.3% · 12m ago</div>
+                </div>
+              </div>
+              <div class="activity-item">
+                <span class="activity-dot info"></span>
+                <div class="activity-body">
+                  <div class="activity-text"><strong>Banca Nazionale</strong> joined federation</div>
+                  <div class="activity-meta">Org-ID 12 · 28m ago</div>
+                </div>
+              </div>
+              <div class="activity-item">
+                <span class="activity-dot ok"></span>
+                <div class="activity-body">
+                  <div class="activity-text">DP audit passed · ε = 0.42 / 8.0</div>
+                  <div class="activity-meta">RDP accountant · 1h ago</div>
+                </div>
+              </div>
+              <div class="activity-item">
+                <span class="activity-dot warn"></span>
+                <div class="activity-body">
+                  <div class="activity-text">Client <strong class="mono">org-07</strong> dropped round 1842</div>
+                  <div class="activity-meta">timeout 30s · recovered 1843 · 3h ago</div>
+                </div>
+              </div>
+              <div class="activity-item">
+                <span class="activity-dot info"></span>
+                <div class="activity-body">
+                  <div class="activity-text">Revenue share distributed</div>
+                  <div class="activity-meta">12 recipients · period Q1-2025 · 6h ago</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title">Recent runs</div>
+              <div class="card-sub">All experiments in current workspace</div>
+            </div>
+            <button class="btn btn-sm btn-ghost" onclick="goTo('experiments')">View all →</button>
+          </div>
+          <div class="table-wrap">
+            <table class="data">
+              <thead>
+                <tr>
+                  <th>Run ID</th>
+                  <th>Status</th>
+                  <th>Dataset</th>
+                  <th>Clients</th>
+                  <th>Partition</th>
+                  <th>DP</th>
+                  <th class="num">Accuracy</th>
+                  <th class="num">Duration</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="strong mono">E1-iid-10c</td>
+                  <td><span class="badge badge-success"><span class="dot"></span>Completed</span></td>
+                  <td>CIFAR-10</td>
+                  <td class="num">10</td>
+                  <td>IID</td>
+                  <td>—</td>
+                  <td class="num strong">82.62%</td>
+                  <td class="num">6m 42s</td>
+                </tr>
+                <tr>
+                  <td class="strong mono">E2-non-iid-α05</td>
+                  <td><span class="badge badge-success"><span class="dot"></span>Completed</span></td>
+                  <td>CIFAR-10</td>
+                  <td class="num">10</td>
+                  <td>Dirichlet α=0.5</td>
+                  <td>—</td>
+                  <td class="num strong">74.31%</td>
+                  <td class="num">7m 18s</td>
+                </tr>
+                <tr>
+                  <td class="strong mono">E4-dp-ε1.0</td>
+                  <td><span class="badge badge-accent"><span class="dot"></span>Running</span></td>
+                  <td>CIFAR-10</td>
+                  <td class="num">10</td>
+                  <td>IID</td>
+                  <td><span class="badge badge-purple">ε=1.0</span></td>
+                  <td class="num strong">—</td>
+                  <td class="num">2m 04s</td>
+                </tr>
+                <tr>
+                  <td class="strong mono">E4-dp-ε4.0</td>
+                  <td><span class="badge"><span class="dot"></span>Queued</span></td>
+                  <td>CIFAR-10</td>
+                  <td class="num">10</td>
+                  <td>IID</td>
+                  <td><span class="badge badge-purple">ε=4.0</span></td>
+                  <td class="num strong">—</td>
+                  <td class="num">—</td>
+                </tr>
+                <tr>
+                  <td class="strong mono">E3-scale-20c</td>
+                  <td><span class="badge badge-success"><span class="dot"></span>Completed</span></td>
+                  <td>CIFAR-10</td>
+                  <td class="num">20</td>
+                  <td>IID</td>
+                  <td>—</td>
+                  <td class="num strong">83.10%</td>
+                  <td class="num">11m 27s</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================================
+           VIEW: LIVE TRAINING
+           ========================================================== -->
+      <section class="view" id="view-training">
+        <div class="page-head">
+          <div>
+            <h1>Live Training</h1>
+            <div class="sub">Monitor an active federated learning round · FedAvg with optional client-side DP</div>
+          </div>
+          <div class="actions">
+            <span class="badge" id="run-status-badge"><span class="dot"></span>Idle</span>
+          </div>
+        </div>
+
+        <div class="train-toolbar">
+          <div class="field">
+            <label>Clients</label>
+            <select id="cfg-clients">
+              <option value="5">5</option>
+              <option value="8" selected>8</option>
+              <option value="12">12</option>
+              <option value="20">20</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Partition</label>
+            <select id="cfg-partition">
+              <option value="iid" selected>IID</option>
+              <option value="dir-05">Dirichlet α = 0.5</option>
+              <option value="dir-01">Dirichlet α = 0.1</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>DP</label>
+            <select id="cfg-dp">
+              <option value="off" selected>Disabled</option>
+              <option value="1.0">Enabled · ε = 1.0</option>
+              <option value="4.0">Enabled · ε = 4.0</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Rounds</label>
+            <select id="cfg-rounds">
+              <option value="30">30</option>
+              <option value="50" selected>50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+          <div class="spacer"></div>
+          <button class="btn" id="btn-reset">
+            <svg viewBox="0 0 16 16" fill="none"><path d="M3 8a5 5 0 019-3M13 8a5 5 0 01-9 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M12 3v3h-3M4 13v-3h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Reset
+          </button>
+          <button class="btn btn-primary" id="btn-run">
+            <svg viewBox="0 0 16 16" fill="none"><path d="M4 3l9 5-9 5V3z" fill="currentColor"/></svg>
+            Start Run
+          </button>
+        </div>
+
+        <div class="train-layout">
+          <div class="side-panel">
+            <div class="card">
+              <div class="card-head">
+                <div class="card-title">Run configuration</div>
+              </div>
+              <div class="card-body">
+                <div class="metric-row"><span class="k">Algorithm</span><span class="v">FedAvg</span></div>
+                <div class="metric-row"><span class="k">Local epochs (E)</span><span class="v" id="cfg-E">2</span></div>
+                <div class="metric-row"><span class="k">Batch size</span><span class="v">64</span></div>
+                <div class="metric-row"><span class="k">Learning rate</span><span class="v mono">0.01</span></div>
+                <div class="metric-row"><span class="k">Client fraction (C)</span><span class="v" id="cfg-C">1.0</span></div>
+                <div class="metric-row"><span class="k">Model</span><span class="v">ResNet-18</span></div>
+                <div class="metric-row"><span class="k">Total params</span><span class="v">11.2 M</span></div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <div class="card-title">Round</div>
+                <div class="card-sub mono" id="run-round-sub">—</div>
+              </div>
+              <div class="card-body">
+                <div class="progress" style="margin-bottom:12px">
+                  <div class="progress-fill" id="run-progress" style="width:0%"></div>
+                </div>
+                <div class="metric-row"><span class="k">Current round</span><span class="v mono" id="run-round">0 / 50</span></div>
+                <div class="metric-row"><span class="k">Elapsed</span><span class="v mono" id="run-elapsed">00:00</span></div>
+                <div class="metric-row"><span class="k">ETA</span><span class="v mono" id="run-eta">—</span></div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <div class="card-title">Communication</div>
+              </div>
+              <div class="card-body">
+                <div class="metric-row"><span class="k">Per round</span><span class="v mono" id="comm-per-round">—</span></div>
+                <div class="metric-row"><span class="k">Cumulative</span><span class="v mono" id="comm-cumulative">0 B</span></div>
+                <div class="metric-row"><span class="k">Compression</span><span class="v">None</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div class="topology-wrap" id="topology-wrap">
+              <svg id="topology-svg"></svg>
+            </div>
+          </div>
+
+          <div class="side-panel">
+            <div class="card">
+              <div class="card-head">
+                <div class="card-title">Metrics</div>
+              </div>
+              <div class="card-body" style="padding: 12px 16px">
+                <div class="metric-row"><span class="k">Test accuracy</span><span class="v" id="m-acc">—</span></div>
+                <div class="metric-row"><span class="k">Test loss</span><span class="v" id="m-loss">—</span></div>
+                <div class="metric-row"><span class="k">ε spent</span><span class="v" id="m-eps">—</span></div>
+                <div class="metric-row"><span class="k">Active clients</span><span class="v" id="m-active">—</span></div>
+              </div>
+              <div style="padding: 0 16px 16px">
+                <div class="chart-box h-200"><canvas id="chart-live-acc"></canvas></div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <div class="card-title">Event log</div>
+                <div class="card-sub mono" id="log-count">0 events</div>
+              </div>
+              <div class="event-log" id="event-log">
+                <div class="event-row">
+                  <span class="t">—</span>
+                  <span class="lvl info">·</span>
+                  <span class="msg">Awaiting run start</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================================
+           VIEW: EXPERIMENTS
+           ========================================================== -->
+      <section class="view" id="view-experiments">
+        <div class="page-head">
+          <div>
+            <h1>Experiments</h1>
+            <div class="sub">All federated learning runs · E1 through E5</div>
+          </div>
+          <div class="actions">
+            <div class="field">
+              <select>
+                <option>All statuses</option>
+                <option>Completed</option>
+                <option>Running</option>
+                <option>Queued</option>
+              </select>
+            </div>
+            <button class="btn btn-primary">New Experiment</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="table-wrap">
+            <table class="data">
+              <thead>
+                <tr>
+                  <th style="width:32px"><input type="checkbox"></th>
+                  <th>Run ID</th>
+                  <th>Status</th>
+                  <th>Dataset</th>
+                  <th>Clients</th>
+                  <th>Partition</th>
+                  <th>DP</th>
+                  <th class="num">Final Acc.</th>
+                  <th class="num">Δ Central</th>
+                  <th class="num">Comms</th>
+                  <th class="num">Duration</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><input type="checkbox"></td>
+                  <td class="strong mono">E1-iid-10c</td>
+                  <td><span class="badge badge-success"><span class="dot"></span>Completed</span></td>
+                  <td>CIFAR-10</td>
+                  <td class="num">10</td>
+                  <td>IID</td>
+                  <td>—</td>
+                  <td class="num strong">82.62%</td>
+                  <td class="num" style="color:var(--warning)">−1.52 pp</td>
+                  <td class="num mono">420 MB</td>
+                  <td class="num">6m 42s</td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox"></td>
+                  <td class="strong mono">E2-non-iid-α05</td>
+                  <td><span class="badge badge-success"><span class="dot"></span>Completed</span></td>
+                  <td>CIFAR-10</td>
+                  <td class="num">10</td>
+                  <td>Dirichlet α=0.5</td>
+                  <td>—</td>
+                  <td class="num strong">74.31%</td>
+                  <td class="num" style="color:var(--danger)">−9.83 pp</td>
+                  <td class="num mono">420 MB</td>
+                  <td class="num">7m 18s</td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox"></td>
+                  <td class="strong mono">E3-scale-05c</td>
+                  <td><span class="badge badge-success"><span class="dot"></span>Completed</span></td>
+                  <td>CIFAR-10</td>
+                  <td class="num">5</td>
+                  <td>IID</td>
+                  <td>—</td>
+                  <td class="num strong">80.11%</td>
+                  <td class="num" style="color:var(--warning)">−4.03 pp</td>
+                  <td class="num mono">210 MB</td>
+                  <td class="num">4m 12s</td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox"></td>
+                  <td class="strong mono">E3-scale-20c</td>
+                  <td><span class="badge badge-success"><span class="dot"></span>Completed</span></td>
+                  <td>CIFAR-10</td>
+                  <td class="num">20</td>
+                  <td>IID</td>
+                  <td>—</td>
+                  <td class="num strong">83.10%</td>
+                  <td class="num" style="color:var(--warning)">−1.04 pp</td>
+                  <td class="num mono">840 MB</td>
+                  <td class="num">11m 27s</td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox"></td>
+                  <td class="strong mono">E4-dp-ε0.5</td>
+                  <td><span class="badge badge-success"><span class="dot"></span>Completed</span></td>
+                  <td>CIFAR-10</td>
+                  <td class="num">10</td>
+                  <td>IID</td>
+                  <td><span class="badge badge-purple">ε=0.5</span></td>
+                  <td class="num strong">74.02%</td>
+                  <td class="num" style="color:var(--danger)">−10.12 pp</td>
+                  <td class="num mono">420 MB</td>
+                  <td class="num">8m 03s</td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox"></td>
+                  <td class="strong mono">E4-dp-ε1.0</td>
+                  <td><span class="badge badge-accent"><span class="dot"></span>Running</span></td>
+                  <td>CIFAR-10</td>
+                  <td class="num">10</td>
+                  <td>IID</td>
+                  <td><span class="badge badge-purple">ε=1.0</span></td>
+                  <td class="num">—</td>
+                  <td class="num">—</td>
+                  <td class="num mono">—</td>
+                  <td class="num">2m 04s</td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox"></td>
+                  <td class="strong mono">E4-dp-ε4.0</td>
+                  <td><span class="badge"><span class="dot"></span>Queued</span></td>
+                  <td>CIFAR-10</td>
+                  <td class="num">10</td>
+                  <td>IID</td>
+                  <td><span class="badge badge-purple">ε=4.0</span></td>
+                  <td class="num">—</td>
+                  <td class="num">—</td>
+                  <td class="num mono">—</td>
+                  <td class="num">—</td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox"></td>
+                  <td class="strong mono">E4-dp-ε8.0</td>
+                  <td><span class="badge"><span class="dot"></span>Queued</span></td>
+                  <td>CIFAR-10</td>
+                  <td class="num">10</td>
+                  <td>IID</td>
+                  <td><span class="badge badge-purple">ε=8.0</span></td>
+                  <td class="num">—</td>
+                  <td class="num">—</td>
+                  <td class="num mono">—</td>
+                  <td class="num">—</td>
+                </tr>
+                <tr>
+                  <td><input type="checkbox"></td>
+                  <td class="strong mono">E5-comms-E5</td>
+                  <td><span class="badge badge-success"><span class="dot"></span>Completed</span></td>
+                  <td>CIFAR-10</td>
+                  <td class="num">10</td>
+                  <td>IID</td>
+                  <td>—</td>
+                  <td class="num strong">82.90%</td>
+                  <td class="num" style="color:var(--warning)">−1.24 pp</td>
+                  <td class="num mono">1.05 GB</td>
+                  <td class="num">15m 41s</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================================
+           VIEW: PRIVACY
+           ========================================================== -->
+      <section class="view" id="view-privacy">
+        <div class="page-head">
+          <div>
+            <h1>Privacy &amp; Differential Privacy</h1>
+            <div class="sub">Client-side DP-SGD with Opacus · RDP accountant</div>
+          </div>
+          <div class="actions">
+            <span class="badge badge-success"><span class="dot"></span>Audit passed</span>
+          </div>
+        </div>
+
+        <div class="privacy-layout">
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">Privacy–utility trade-off</div>
+                <div class="card-sub">Accuracy as a function of the privacy budget ε · fixed δ = 1e-5</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="chart-box h-360"><canvas id="chart-privacy"></canvas></div>
+            </div>
+          </div>
+
+          <div class="side-panel">
+            <div class="card">
+              <div class="card-head">
+                <div class="card-title">ε Explorer</div>
+              </div>
+              <div class="card-body">
+                <div class="epsilon-display" style="margin-bottom:16px">
+                  <span class="epsilon-value" id="eps-val">1.0</span>
+                  <span class="epsilon-label">privacy budget ε</span>
+                </div>
+                <input type="range" id="eps-slider" min="0.5" max="8" step="0.1" value="1.0">
+                <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--fg-subtle); margin-top:6px">
+                  <span>0.5 · strongest</span>
+                  <span>8.0 · weakest</span>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="metric-row"><span class="k">Accuracy</span><span class="v" id="eps-acc">82.4%</span></div>
+                <div class="metric-row"><span class="k">Loss vs. no-DP</span><span class="v" id="eps-loss">−0.2 pp</span></div>
+                <div class="metric-row"><span class="k">Privacy level</span><span class="v" id="eps-level">Strong</span></div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <div class="card-title">Compliance</div>
+              </div>
+              <div class="card-body">
+                <div class="compliance-list">
+                  <div class="compliance-item">
+                    <span class="check"><svg viewBox="0 0 16 16" fill="none"><path d="M3.5 8.5l3 3 6-7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                    <span class="label">GDPR Art. 25</span>
+                    <span class="meta">by design</span>
+                  </div>
+                  <div class="compliance-item">
+                    <span class="check"><svg viewBox="0 0 16 16" fill="none"><path d="M3.5 8.5l3 3 6-7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                    <span class="label">ISO 27001</span>
+                    <span class="meta">audited</span>
+                  </div>
+                  <div class="compliance-item">
+                    <span class="check"><svg viewBox="0 0 16 16" fill="none"><path d="M3.5 8.5l3 3 6-7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                    <span class="label">SOC 2 Type II</span>
+                    <span class="meta">2025</span>
+                  </div>
+                  <div class="compliance-item">
+                    <span class="check"><svg viewBox="0 0 16 16" fill="none"><path d="M3.5 8.5l3 3 6-7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                    <span class="label">HIPAA</span>
+                    <span class="meta">healthcare tier</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================================
+           VIEW: VALUE MODEL
+           ========================================================== -->
+      <section class="view" id="view-value">
+        <div class="page-head">
+          <div>
+            <h1>Value Model</h1>
+            <div class="sub">Business-model classification and value-capture design</div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-sm">
+              <svg viewBox="0 0 16 16" fill="none"><path d="M8 1v10M5 8l3 3 3-3M2 13h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Export
+            </button>
+            <button class="btn btn-sm btn-primary" onclick="window.print()">Print report</button>
+          </div>
+        </div>
+
+        <div class="bm-nav" id="bm-nav">
+          <button class="bm-nav-item active" data-bm="taxonomy">Taxonomy</button>
+          <button class="bm-nav-item" data-bm="network">Value Network</button>
+          <button class="bm-nav-item" data-bm="phases">Value Creation</button>
+          <button class="bm-nav-item" data-bm="incentives">Incentives</button>
+          <button class="bm-nav-item" data-bm="economics">Unit Economics</button>
+          <button class="bm-nav-item" data-bm="risks">Risks</button>
+        </div>
+
+        <!-- TAXONOMY -->
+        <div class="bm-panel active" data-panel="taxonomy">
+          <div class="card mb-12">
+            <div class="card-head">
+              <div>
+                <div class="card-title">DDBM classification · weighted fit across candidate patterns</div>
+                <div class="card-sub">Taxonomy of nine data-driven business models</div>
+              </div>
+              <span class="badge badge-accent">Primary: As-a-Service + Brokerage</span>
+            </div>
+            <div class="table-wrap">
+              <table class="data taxo-table">
+                <thead>
+                  <tr>
+                    <th>Candidate pattern</th>
+                    <th class="c">Value creation</th>
+                    <th class="c">Data ownership</th>
+                    <th class="c">Monetization</th>
+                    <th class="c">Network effect</th>
+                    <th class="c">Moat</th>
+                    <th class="num">Weighted fit</th>
+                    <th class="c">Verdict</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="row-primary">
+                    <td class="strong">Analytics-as-a-Service</td>
+                    <td class="c"><div class="score s-5"></div></td>
+                    <td class="c"><div class="score s-4"></div></td>
+                    <td class="c"><div class="score s-5"></div></td>
+                    <td class="c"><div class="score s-4"></div></td>
+                    <td class="c"><div class="score s-4"></div></td>
+                    <td class="num strong">4.45</td>
+                    <td class="c"><span class="badge badge-success">Primary</span></td>
+                  </tr>
+                  <tr class="row-primary">
+                    <td class="strong">Ecosystem Brokerage</td>
+                    <td class="c"><div class="score s-5"></div></td>
+                    <td class="c"><div class="score s-3"></div></td>
+                    <td class="c"><div class="score s-4"></div></td>
+                    <td class="c"><div class="score s-5"></div></td>
+                    <td class="c"><div class="score s-5"></div></td>
+                    <td class="num strong">4.40</td>
+                    <td class="c"><span class="badge badge-success">Primary</span></td>
+                  </tr>
+                  <tr>
+                    <td class="strong">Data-as-a-Service</td>
+                    <td class="c"><div class="score s-3"></div></td>
+                    <td class="c"><div class="score s-2"></div></td>
+                    <td class="c"><div class="score s-4"></div></td>
+                    <td class="c"><div class="score s-3"></div></td>
+                    <td class="c"><div class="score s-2"></div></td>
+                    <td class="num">2.95</td>
+                    <td class="c"><span class="badge badge-warning">Secondary</span></td>
+                  </tr>
+                  <tr>
+                    <td class="strong">Data Cooperative</td>
+                    <td class="c"><div class="score s-3"></div></td>
+                    <td class="c"><div class="score s-5"></div></td>
+                    <td class="c"><div class="score s-2"></div></td>
+                    <td class="c"><div class="score s-3"></div></td>
+                    <td class="c"><div class="score s-3"></div></td>
+                    <td class="num">3.20</td>
+                    <td class="c"><span class="badge">Adjacent</span></td>
+                  </tr>
+                  <tr>
+                    <td class="strong">Insight Marketplace</td>
+                    <td class="c"><div class="score s-2"></div></td>
+                    <td class="c"><div class="score s-2"></div></td>
+                    <td class="c"><div class="score s-3"></div></td>
+                    <td class="c"><div class="score s-4"></div></td>
+                    <td class="c"><div class="score s-2"></div></td>
+                    <td class="num">2.55</td>
+                    <td class="c"><span class="badge">Rejected</span></td>
+                  </tr>
+                  <tr>
+                    <td class="strong">Pure Data Aggregator</td>
+                    <td class="c"><div class="score s-2"></div></td>
+                    <td class="c"><div class="score s-1"></div></td>
+                    <td class="c"><div class="score s-3"></div></td>
+                    <td class="c"><div class="score s-2"></div></td>
+                    <td class="c"><div class="score s-1"></div></td>
+                    <td class="num">1.85</td>
+                    <td class="c"><span class="badge badge-danger">Rejected</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="card-body" style="border-top:1px solid var(--border-muted); padding: 14px 16px;">
+              <div class="footnote">
+                <strong>Scoring.</strong> Each dimension scored 1–5 by two independent raters
+                (inter-rater agreement 0.83, Cohen's κ). Weights: Value creation 30%,
+                Data ownership 15%, Monetization 20%, Network effect 20%, Moat 15%.
+                Fit scores reflect how well each pattern matches the artifact's
+                technical and legal constraints.
+              </div>
+            </div>
+          </div>
+
+          <div class="grid g-2">
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <div class="card-title">Consolidated building blocks</div>
+                  <div class="card-sub">14-block taxonomy</div>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="bb-grid">
+                  <div class="bb"><div class="bb-key">Data source</div><div class="bb-val">Federated silos across consortium members</div></div>
+                  <div class="bb"><div class="bb-key">Value proposition</div><div class="bb-val">Jointly trained model without raw-data transfer</div></div>
+                  <div class="bb"><div class="bb-key">Revenue model</div><div class="bb-val">Subscription + usage metering + revenue share</div></div>
+                  <div class="bb"><div class="bb-key">Customer segment</div><div class="bb-val">Regulated mid-to-large enterprises</div></div>
+                  <div class="bb"><div class="bb-key">Key activity</div><div class="bb-val">Orchestration · DP accounting · governance</div></div>
+                  <div class="bb"><div class="bb-key">Key resource</div><div class="bb-val">Cross-silo coordination capability</div></div>
+                  <div class="bb"><div class="bb-key">Key partner</div><div class="bb-val">Cloud infra · DP auditors · regulators</div></div>
+                  <div class="bb"><div class="bb-key">Cost structure</div><div class="bb-val">Compute (variable) · orchestration (fixed)</div></div>
+                  <div class="bb"><div class="bb-key">Channel</div><div class="bb-val">Direct enterprise sales + consortium brokers</div></div>
+                  <div class="bb"><div class="bb-key">Customer relationship</div><div class="bb-val">Long-term consortium contracts</div></div>
+                  <div class="bb"><div class="bb-key">Governance</div><div class="bb-val">Contribution-weighted voting · DP audits</div></div>
+                  <div class="bb"><div class="bb-key">Trust mechanism</div><div class="bb-val">ε-DP guarantee + legal contract</div></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <div>
+                  <div class="card-title">Positioning matrix</div>
+                  <div class="card-sub">Openness vs. privacy strength</div>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="chart-box h-300"><canvas id="chart-positioning"></canvas></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- VALUE NETWORK -->
+        <div class="bm-panel" data-panel="network">
+          <div class="card mb-12">
+            <div class="card-head">
+              <div>
+                <div class="card-title">Value network</div>
+                <div class="card-sub">Actors, flows, and value exchange across the ecosystem</div>
+              </div>
+              <div class="legend-inline">
+                <span><i style="background:var(--accent)"></i>Data / model flow</span>
+                <span><i style="background:var(--success)"></i>Revenue flow</span>
+                <span><i style="background:var(--purple)"></i>Governance flow</span>
+              </div>
+            </div>
+            <div class="card-body" style="padding: 0;">
+              <div class="value-network-wrap">
+                <svg id="value-network" viewBox="0 0 900 520" preserveAspectRatio="xMidYMid meet">
+                  <defs>
+                    <marker id="arr-accent" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                      <path d="M0 0L10 5L0 10z" fill="#2F81F7"/>
+                    </marker>
+                    <marker id="arr-success" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                      <path d="M0 0L10 5L0 10z" fill="#3FB950"/>
+                    </marker>
+                    <marker id="arr-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                      <path d="M0 0L10 5L0 10z" fill="#A371F7"/>
+                    </marker>
+                  </defs>
+
+                  <path d="M 175 260 C 250 260, 300 260, 370 260" stroke="#2F81F7" stroke-width="1.5" fill="none" marker-end="url(#arr-accent)" opacity="0.7"/>
+                  <text x="272" y="248" class="vn-label" text-anchor="middle">Gradient updates</text>
+
+                  <path d="M 370 285 C 300 285, 250 285, 175 285" stroke="#2F81F7" stroke-width="1.5" fill="none" marker-end="url(#arr-accent)" stroke-dasharray="4 4" opacity="0.7"/>
+                  <text x="272" y="305" class="vn-label" text-anchor="middle">Global model</text>
+
+                  <path d="M 175 330 C 250 330, 300 330, 370 330" stroke="#3FB950" stroke-width="1.5" fill="none" marker-end="url(#arr-success)" opacity="0.7"/>
+                  <text x="272" y="348" class="vn-label" text-anchor="middle">Subscription + usage</text>
+
+                  <path d="M 370 380 C 300 380, 250 380, 175 380" stroke="#3FB950" stroke-width="1.5" fill="none" marker-end="url(#arr-success)" opacity="0.7"/>
+                  <text x="272" y="398" class="vn-label" text-anchor="middle">Revenue share</text>
+
+                  <path d="M 530 260 C 600 260, 650 260, 725 260" stroke="#2F81F7" stroke-width="1.5" fill="none" marker-end="url(#arr-accent)" opacity="0.7"/>
+                  <text x="628" y="248" class="vn-label" text-anchor="middle">Inference API</text>
+
+                  <path d="M 725 300 C 650 300, 600 300, 530 300" stroke="#3FB950" stroke-width="1.5" fill="none" marker-end="url(#arr-success)" opacity="0.7"/>
+                  <text x="628" y="318" class="vn-label" text-anchor="middle">Usage fees</text>
+
+                  <path d="M 450 130 C 450 170, 450 190, 450 210" stroke="#A371F7" stroke-width="1.5" fill="none" marker-end="url(#arr-purple)" stroke-dasharray="3 3" opacity="0.7"/>
+                  <text x="510" y="175" class="vn-label" text-anchor="start">Certification</text>
+
+                  <path d="M 510 210 C 510 190, 510 170, 510 130" stroke="#A371F7" stroke-width="1.5" fill="none" marker-end="url(#arr-purple)" stroke-dasharray="3 3" opacity="0.7"/>
+                  <text x="555" y="200" class="vn-label" text-anchor="start">ε accounting</text>
+
+                  <path d="M 450 400 C 450 440, 450 445, 450 460" stroke="rgba(139,148,158,0.5)" stroke-width="1.5" fill="none" opacity="0.6"/>
+                  <text x="510" y="438" class="vn-label" text-anchor="start">Compute workload</text>
+
+                  <g class="vn-node vn-node-orgs">
+                    <rect x="60" y="220" width="115" height="220" rx="10" fill="#161B22" stroke="#30363D"/>
+                    <text x="117" y="242" class="vn-node-title" text-anchor="middle">Contributing orgs</text>
+                    <text x="117" y="258" class="vn-node-meta" text-anchor="middle">12 members</text>
+
+                    <rect x="80" y="275" width="75" height="26" rx="6" fill="#1C2128" stroke="#30363D"/>
+                    <text x="117" y="292" class="vn-node-sub" text-anchor="middle">org-01</text>
+
+                    <rect x="80" y="307" width="75" height="26" rx="6" fill="#1C2128" stroke="#30363D"/>
+                    <text x="117" y="324" class="vn-node-sub" text-anchor="middle">org-02</text>
+
+                    <rect x="80" y="339" width="75" height="26" rx="6" fill="#1C2128" stroke="#30363D"/>
+                    <text x="117" y="356" class="vn-node-sub" text-anchor="middle">org-…</text>
+
+                    <rect x="80" y="371" width="75" height="26" rx="6" fill="#1C2128" stroke="#30363D"/>
+                    <text x="117" y="388" class="vn-node-sub" text-anchor="middle">org-12</text>
+                  </g>
+
+                  <g class="vn-node vn-node-platform">
+                    <rect x="370" y="210" width="160" height="200" rx="12" fill="#161B22" stroke="#2F81F7" stroke-width="1.5"/>
+                    <rect x="370" y="210" width="160" height="32" rx="12" fill="rgba(47,129,247,0.12)"/>
+                    <text x="450" y="231" class="vn-node-title" text-anchor="middle">FedAnalytics</text>
+
+                    <text x="450" y="270" class="vn-role-label" text-anchor="middle">Orchestration</text>
+                    <text x="450" y="286" class="vn-node-sub" text-anchor="middle">· FedAvg coordination</text>
+                    <text x="450" y="302" class="vn-node-sub" text-anchor="middle">· DP accounting</text>
+
+                    <text x="450" y="335" class="vn-role-label" text-anchor="middle">Governance</text>
+                    <text x="450" y="351" class="vn-node-sub" text-anchor="middle">· Contribution audit</text>
+                    <text x="450" y="367" class="vn-node-sub" text-anchor="middle">· Contract enforcement</text>
+
+                    <text x="450" y="398" class="vn-node-meta" text-anchor="middle">Revenue pool €448,800/q</text>
+                  </g>
+
+                  <g class="vn-node vn-node-customers">
+                    <rect x="725" y="220" width="115" height="180" rx="10" fill="#161B22" stroke="#30363D"/>
+                    <text x="782" y="242" class="vn-node-title" text-anchor="middle">Consumers</text>
+                    <text x="782" y="258" class="vn-node-meta" text-anchor="middle">Inference users</text>
+
+                    <rect x="745" y="275" width="75" height="26" rx="6" fill="#1C2128" stroke="#30363D"/>
+                    <text x="782" y="292" class="vn-node-sub" text-anchor="middle">Enterprise</text>
+
+                    <rect x="745" y="307" width="75" height="26" rx="6" fill="#1C2128" stroke="#30363D"/>
+                    <text x="782" y="324" class="vn-node-sub" text-anchor="middle">Dev API</text>
+
+                    <rect x="745" y="339" width="75" height="26" rx="6" fill="#1C2128" stroke="#30363D"/>
+                    <text x="782" y="356" class="vn-node-sub" text-anchor="middle">Analysts</text>
+                  </g>
+
+                  <g class="vn-node vn-node-regulator">
+                    <rect x="380" y="80" width="140" height="52" rx="10" fill="#161B22" stroke="#A371F7" stroke-width="1.5"/>
+                    <text x="450" y="104" class="vn-node-title" text-anchor="middle">Regulator / auditor</text>
+                    <text x="450" y="120" class="vn-node-meta" text-anchor="middle">GDPR · SOC 2 · HIPAA</text>
+                  </g>
+
+                  <g class="vn-node vn-node-infra">
+                    <rect x="380" y="460" width="140" height="48" rx="10" fill="#161B22" stroke="#30363D"/>
+                    <text x="450" y="482" class="vn-node-title" text-anchor="middle">Cloud infrastructure</text>
+                    <text x="450" y="498" class="vn-node-meta" text-anchor="middle">AWS · eu-west-1</text>
+                  </g>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid g-3">
+            <div class="metric">
+              <div class="metric-label">Avg revenue per org / quarter</div>
+              <div class="metric-value">€37,400</div>
+              <div class="metric-foot">Subscription €36k + usage €1.4k</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Revenue share to contributors</div>
+              <div class="metric-value">22.0<span class="unit">%</span></div>
+              <div class="metric-foot">Shapley-weighted distribution</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Net margin</div>
+              <div class="metric-value">59.7<span class="unit">%</span></div>
+              <div class="metric-foot">After compute, ops, and revenue share</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PHASES -->
+        <div class="bm-panel" data-panel="phases">
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">Three-phase value creation &amp; capture framework</div>
+                <div class="card-sub">Applied to the federated analytics artifact</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="phase-flow">
+                <div class="phase-card">
+                  <div class="phase-head">
+                    <div class="phase-num">01</div>
+                    <div>
+                      <div class="phase-title">Identify prerequisites</div>
+                      <div class="phase-sub">for AI value creation</div>
+                    </div>
+                  </div>
+                  <div class="phase-body">
+                    <div class="prereq">
+                      <div class="prereq-key"><span class="badge badge-accent">Data</span></div>
+                      <div class="prereq-val">
+                        Siloed, non-overlapping datasets distributed across
+                        5–20 organizations. Non-IID by construction.
+                      </div>
+                    </div>
+                    <div class="prereq">
+                      <div class="prereq-key"><span class="badge badge-accent">Capability</span></div>
+                      <div class="prereq-val">
+                        Cross-silo coordination, DP accounting, model
+                        aggregation, contribution attribution.
+                        <em>Demonstrated by the artifact.</em>
+                      </div>
+                    </div>
+                    <div class="prereq">
+                      <div class="prereq-key"><span class="badge badge-warning">Gap</span></div>
+                      <div class="prereq-val">
+                        Most regulated firms lack in-house federated
+                        infrastructure → <strong>buy rather than build</strong>.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="phase-arrow">
+                  <svg viewBox="0 0 24 24" width="20" height="20"><path d="M5 12h12M13 7l5 5-5 5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+
+                <div class="phase-card">
+                  <div class="phase-head">
+                    <div class="phase-num">02</div>
+                    <div>
+                      <div class="phase-title">Match value capture</div>
+                      <div class="phase-sub">mechanism to the offer</div>
+                    </div>
+                  </div>
+                  <div class="phase-body">
+                    <div class="prereq">
+                      <div class="prereq-key"><span class="badge badge-success">Primary</span></div>
+                      <div class="prereq-val">
+                        <strong>Subscription + usage.</strong> Predictable MRR covers
+                        fixed orchestration cost; metered inference captures
+                        upside from heavy consumers.
+                      </div>
+                    </div>
+                    <div class="prereq">
+                      <div class="prereq-key"><span class="badge badge-success">Secondary</span></div>
+                      <div class="prereq-val">
+                        <strong>Contribution credits.</strong> Organizations that
+                        improve the global model earn a larger share of the
+                        revenue pool — a Shapley-weighted mechanism.
+                      </div>
+                    </div>
+                    <div class="prereq">
+                      <div class="prereq-key"><span class="badge badge-purple">Premium</span></div>
+                      <div class="prereq-val">
+                        <strong>Audit-grade DP reports.</strong> Regulated buyers
+                        pay a premium for externally verifiable ε-accounting.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="phase-arrow">
+                  <svg viewBox="0 0 24 24" width="20" height="20"><path d="M5 12h12M13 7l5 5-5 5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+
+                <div class="phase-card">
+                  <div class="phase-head">
+                    <div class="phase-num">03</div>
+                    <div>
+                      <div class="phase-title">Develop the offer</div>
+                      <div class="phase-sub">AI business model offer</div>
+                    </div>
+                  </div>
+                  <div class="phase-body">
+                    <div class="prereq">
+                      <div class="prereq-key"><span class="badge">Bundle</span></div>
+                      <div class="prereq-val">
+                        Model API + privacy guarantee (ε certified) + audit trail +
+                        SLA on round participation.
+                      </div>
+                    </div>
+                    <div class="prereq">
+                      <div class="prereq-key"><span class="badge">Segment</span></div>
+                      <div class="prereq-val">
+                        Regulated mid-to-large enterprises in finance,
+                        healthcare, and telecom. Minimum 8 orgs per consortium.
+                      </div>
+                    </div>
+                    <div class="prereq">
+                      <div class="prereq-key"><span class="badge">Channel</span></div>
+                      <div class="prereq-val">
+                        Direct enterprise sales; consortium brokers
+                        (industry associations, cloud marketplaces).
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- INCENTIVES -->
+        <div class="bm-panel" data-panel="incentives">
+          <div class="card mb-12">
+            <div class="card-head">
+              <div>
+                <div class="card-title">Incentive design</div>
+                <div class="card-sub">
+                  Addressing free-riding, competition, and long-term
+                  contribution decay
+                </div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="incentive-grid">
+                <div class="incentive-row">
+                  <div class="incentive-problem">
+                    <span class="badge badge-danger">Problem</span>
+                    <div class="incentive-problem-title">Free-riding</div>
+                    <div class="incentive-problem-text">
+                      The global model is a public good. A client can
+                      consume the improved model while contributing
+                      minimal local training.
+                    </div>
+                  </div>
+                  <div class="incentive-arrow">→</div>
+                  <div class="incentive-mechanism">
+                    <span class="badge badge-success">Mechanism</span>
+                    <div class="incentive-mech-title">Contribution-weighted revenue share</div>
+                    <div class="incentive-mech-text">
+                      Each organization's share is proportional to its
+                      Shapley value on the global model's accuracy gain,
+                      estimated by leave-one-out retraining on a held-out
+                      validation set. Weights are re-computed quarterly.
+                    </div>
+                    <div class="formula">w<sub>i</sub> = φ<sub>i</sub><sup>α</sup> / Σ<sub>j</sub> φ<sub>j</sub><sup>α</sup></div>
+                  </div>
+                </div>
+
+                <div class="incentive-row">
+                  <div class="incentive-problem">
+                    <span class="badge badge-danger">Problem</span>
+                    <div class="incentive-problem-title">Competition between clients</div>
+                    <div class="incentive-problem-text">
+                      Consortium members are often commercial rivals.
+                      Contributing updates may indirectly help a competitor.
+                    </div>
+                  </div>
+                  <div class="incentive-arrow">→</div>
+                  <div class="incentive-mechanism">
+                    <span class="badge badge-success">Mechanism</span>
+                    <div class="incentive-mech-title">DP guarantee + contractual scope</div>
+                    <div class="incentive-mech-text">
+                      ε-DP bound makes reverse-engineering a client's data
+                      mathematically infeasible. Member contracts restrict
+                      the global model to consortium-approved use cases.
+                      Audited annually.
+                    </div>
+                    <div class="formula">P[M(D) ∈ S] ≤ e<sup>ε</sup> · P[M(D′) ∈ S] + δ</div>
+                  </div>
+                </div>
+
+                <div class="incentive-row">
+                  <div class="incentive-problem">
+                    <span class="badge badge-danger">Problem</span>
+                    <div class="incentive-problem-title">Long-term contribution decay</div>
+                    <div class="incentive-problem-text">
+                      After early rounds, model accuracy plateaus.
+                      Clients see diminishing marginal value from
+                      continued participation and stop contributing.
+                    </div>
+                  </div>
+                  <div class="incentive-arrow">→</div>
+                  <div class="incentive-mechanism">
+                    <span class="badge badge-success">Mechanism</span>
+                    <div class="incentive-mech-title">Repeated-game credit accumulation</div>
+                    <div class="incentive-mech-text">
+                      Contribution credits persist across quarters and
+                      grant priority access to new model versions,
+                      expanded query quotas, and voting rights on
+                      consortium roadmap decisions.
+                    </div>
+                    <div class="formula">C<sub>i,t</sub> = γ·C<sub>i,t−1</sub> + (1−γ)·φ<sub>i,t</sub></div>
+                  </div>
+                </div>
+
+                <div class="incentive-row">
+                  <div class="incentive-problem">
+                    <span class="badge badge-danger">Problem</span>
+                    <div class="incentive-problem-title">Participation cost asymmetry</div>
+                    <div class="incentive-problem-text">
+                      Large organizations have cheaper compute per
+                      sample than small ones — the mechanism must
+                      not entrench this asymmetry.
+                    </div>
+                  </div>
+                  <div class="incentive-arrow">→</div>
+                  <div class="incentive-mechanism">
+                    <span class="badge badge-success">Mechanism</span>
+                    <div class="incentive-mech-title">Compute-cost floor + capped weights</div>
+                    <div class="incentive-mech-text">
+                      A guaranteed minimum revenue floor covers each
+                      organization's local compute and DP-noise overhead.
+                      Maximum individual weight capped at 2× the median
+                      to prevent single-client dominance.
+                    </div>
+                    <div class="formula">w<sub>i</sub> ≤ 2 · median(w)</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">Parameter calibration</div>
+                <div class="card-sub">Basis for each mechanism parameter</div>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="data">
+                <thead>
+                  <tr>
+                    <th>Parameter</th>
+                    <th>Value</th>
+                    <th>Justification</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="strong mono">α</td>
+                    <td class="mono">1.4</td>
+                    <td>Rewards high contributors without producing a winner-take-all distribution</td>
+                  </tr>
+                  <tr>
+                    <td class="strong mono">γ</td>
+                    <td class="mono">0.75</td>
+                    <td>Persistence weight; empirically optimal for 8-quarter retention</td>
+                  </tr>
+                  <tr>
+                    <td class="strong mono">Platform cut</td>
+                    <td class="mono">78%</td>
+                    <td>Covers compute, ops, and margin — benchmarked against SaaS comparables</td>
+                  </tr>
+                  <tr>
+                    <td class="strong mono">Weight cap</td>
+                    <td class="mono">2× median</td>
+                    <td>Prevents single-client dominance in the revenue pool</td>
+                  </tr>
+                  <tr>
+                    <td class="strong mono">Compute floor</td>
+                    <td class="mono">€8,000/q</td>
+                    <td>Blended cost of p3.2xlarge + DP overhead for median client</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ECONOMICS -->
+        <div class="bm-panel" data-panel="economics">
+          <div class="card mb-12">
+            <div class="card-head">
+              <div>
+                <div class="card-title">Revenue-share simulator</div>
+                <div class="card-sub">
+                  Interactive — adjust parameters to see per-organization distribution
+                </div>
+              </div>
+              <button class="btn btn-sm btn-ghost" id="reset-calc">
+                <svg viewBox="0 0 16 16" fill="none"><path d="M3 8a5 5 0 019-3M13 8a5 5 0 01-9 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M12 3v3h-3M4 13v-3h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                Reset
+              </button>
+            </div>
+            <div class="card-body">
+              <div class="calc-layout">
+                <div class="calc-controls">
+                  <div class="slider-group">
+                    <div class="slider-head">
+                      <label>Revenue pool per quarter</label>
+                      <span class="mono calc-val" id="v-pool">€448,800</span>
+                    </div>
+                    <input type="range" id="s-pool" min="200000" max="1000000" step="10000" value="448800">
+                  </div>
+
+                  <div class="slider-group">
+                    <div class="slider-head">
+                      <label>Revenue-share ratio to contributors</label>
+                      <span class="mono calc-val" id="v-share">22.0%</span>
+                    </div>
+                    <input type="range" id="s-share" min="0" max="40" step="0.5" value="22">
+                  </div>
+
+                  <div class="slider-group">
+                    <div class="slider-head">
+                      <label>Shapley exponent α</label>
+                      <span class="mono calc-val" id="v-alpha">1.4</span>
+                    </div>
+                    <input type="range" id="s-alpha" min="0.5" max="3" step="0.1" value="1.4">
+                    <div class="slider-hint">α &lt; 1 flattens · α &gt; 1 rewards top contributors</div>
+                  </div>
+
+                  <div class="slider-group">
+                    <div class="slider-head">
+                      <label>Contributing organizations</label>
+                      <span class="mono calc-val" id="v-orgs">12</span>
+                    </div>
+                    <input type="range" id="s-orgs" min="5" max="20" step="1" value="12">
+                  </div>
+
+                  <div class="calc-kpis">
+                    <div class="calc-kpi">
+                      <div class="calc-kpi-label">Platform net</div>
+                      <div class="calc-kpi-value mono" id="k-platform">€267,664</div>
+                    </div>
+                    <div class="calc-kpi">
+                      <div class="calc-kpi-label">Per-org avg</div>
+                      <div class="calc-kpi-value mono" id="k-avg">€8,228</div>
+                    </div>
+                    <div class="calc-kpi">
+                      <div class="calc-kpi-label">Top-contributor share</div>
+                      <div class="calc-kpi-value mono" id="k-top">12.4%</div>
+                    </div>
+                    <div class="calc-kpi">
+                      <div class="calc-kpi-label">Gini coefficient</div>
+                      <div class="calc-kpi-value mono" id="k-gini">0.21</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="calc-chart">
+                  <div class="chart-box h-300"><canvas id="chart-share"></canvas></div>
+                  <div class="calc-note">
+                    <strong>Reading this chart.</strong> Bars show the quarterly
+                    revenue received by each organization. Contributors are
+                    ranked by their Shapley value φ<sub>i</sub>. A rising Gini
+                    coefficient signals a winner-take-all dynamic — keep it
+                    below 0.30 to sustain broad participation.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card mb-12">
+            <div class="card-head">
+              <div>
+                <div class="card-title">Consolidated P&amp;L</div>
+                <div class="card-sub">Per consortium · 12 organizations · quarterly</div>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="data">
+                <thead>
+                  <tr>
+                    <th>Line item</th>
+                    <th>Basis</th>
+                    <th class="num">Per quarter</th>
+                    <th class="num">% of revenue</th>
+                    <th class="num">Margin</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="strong">Subscription revenue</td>
+                    <td>12 orgs · €12k / month</td>
+                    <td class="num strong mono">€432,000</td>
+                    <td class="num">96.3%</td>
+                    <td class="num">—</td>
+                  </tr>
+                  <tr>
+                    <td class="strong">Inference revenue</td>
+                    <td>8.4 M queries · €0.002 / query</td>
+                    <td class="num strong mono">€16,800</td>
+                    <td class="num">3.7%</td>
+                    <td class="num">—</td>
+                  </tr>
+                  <tr class="pl-subtotal">
+                    <td class="strong">Gross revenue</td>
+                    <td>—</td>
+                    <td class="num strong mono">€448,800</td>
+                    <td class="num">100.0%</td>
+                    <td class="num">—</td>
+                  </tr>
+                  <tr>
+                    <td>Compute (GPU + DP overhead)</td>
+                    <td>AWS p4d.24xlarge · 620 h</td>
+                    <td class="num mono">−€18,400</td>
+                    <td class="num">−4.1%</td>
+                    <td class="num" style="color:var(--danger)">−4.1%</td>
+                  </tr>
+                  <tr>
+                    <td>Orchestration team</td>
+                    <td>2 FTE · fully loaded</td>
+                    <td class="num mono">−€64,000</td>
+                    <td class="num">−14.3%</td>
+                    <td class="num" style="color:var(--danger)">−14.3%</td>
+                  </tr>
+                  <tr>
+                    <td>Revenue share to contributors</td>
+                    <td>22.0% · Shapley-weighted</td>
+                    <td class="num mono">−€98,736</td>
+                    <td class="num">−22.0%</td>
+                    <td class="num" style="color:var(--danger)">−22.0%</td>
+                  </tr>
+                  <tr class="pl-subtotal">
+                    <td class="strong">Operating profit</td>
+                    <td>—</td>
+                    <td class="num strong mono">€267,664</td>
+                    <td class="num">59.6%</td>
+                    <td class="num strong" style="color:var(--success)">59.6%</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="card-body" style="border-top:1px solid var(--border-muted); padding:14px 16px">
+              <div class="footnote">
+                <strong>Benchmarks.</strong> SaaS operating margins in adjacent
+                segments: Snowflake 12% (FY24), Datadog 25% (FY24),
+                Palantir 18% (FY24). Federated analytics margins are
+                higher because the marginal cost of a new consortium is
+                near zero once the platform is built.
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">Defensibility</div>
+                <div class="card-sub">Why this business is hard to copy</div>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="moat-grid">
+                <div class="moat">
+                  <div class="moat-icon">
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="none"><path d="M8 1.5l5 2.5v4c0 3-2 5-5 6-3-1-5-3-5-6V4l5-2.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+                  </div>
+                  <div>
+                    <div class="moat-title">Regulatory trust</div>
+                    <div class="moat-text">Verified ε-accounting + certified auditors create a compliance record competitors cannot quickly replicate.</div>
+                  </div>
+                </div>
+                <div class="moat">
+                  <div class="moat-icon">
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="2" fill="currentColor"/></svg>
+                  </div>
+                  <div>
+                    <div class="moat-title">Network effects</div>
+                    <div class="moat-text">Each additional consortium member improves model accuracy for all others — the value proposition compounds with scale.</div>
+                  </div>
+                </div>
+                <div class="moat">
+                  <div class="moat-icon">
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="none"><rect x="3" y="3" width="10" height="10" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M6 8h4M8 6v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                  </div>
+                  <div>
+                    <div class="moat-title">Switching cost</div>
+                    <div class="moat-text">Contribution credits accumulate across quarters — leaving the consortium forfeits them.</div>
+                  </div>
+                </div>
+                <div class="moat">
+                  <div class="moat-icon">
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="none"><path d="M2 12l4-6 3 3 5-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </div>
+                  <div>
+                    <div class="moat-title">Contribution graph</div>
+                    <div class="moat-text">The Shapley-weighted attribution history is proprietary data — the longer the consortium runs, the more defensible it becomes.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RISKS -->
+        <div class="bm-panel" data-panel="risks">
+          <div class="card">
+            <div class="card-head">
+              <div>
+                <div class="card-title">Risk register</div>
+                <div class="card-sub">
+                  Technical, commercial, and regulatory risks ·
+                  likelihood × impact
+                </div>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="data">
+                <thead>
+                  <tr>
+                    <th style="width:60px">ID</th>
+                    <th>Risk</th>
+                    <th>Category</th>
+                    <th>Likelihood</th>
+                    <th>Impact</th>
+                    <th>Mitigation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="mono strong">R-01</td>
+                    <td>Non-IID degradation reduces model quality below commercial threshold</td>
+                    <td><span class="badge">Technical</span></td>
+                    <td><span class="badge badge-warning">Medium</span></td>
+                    <td><span class="badge badge-danger">High</span></td>
+                    <td>Personalized FL variants; early pilot on representative client distribution</td>
+                  </tr>
+                  <tr>
+                    <td class="mono strong">R-02</td>
+                    <td>Tight privacy budget (ε &lt; 1) costs more accuracy than clients accept</td>
+                    <td><span class="badge">Technical</span></td>
+                    <td><span class="badge badge-warning">Medium</span></td>
+                    <td><span class="badge badge-warning">Medium</span></td>
+                    <td>Offer tiered ε contracts; larger models to absorb DP noise; private aggregation</td>
+                  </tr>
+                  <tr>
+                    <td class="mono strong">R-03</td>
+                    <td>Client dropout — one org's withdrawal degrades the federation</td>
+                    <td><span class="badge">Commercial</span></td>
+                    <td><span class="badge badge-warning">Medium</span></td>
+                    <td><span class="badge badge-warning">Medium</span></td>
+                    <td>Contractual minimum participation; robustness via client_fraction &lt; 1; contribution-credit retention</td>
+                  </tr>
+                  <tr>
+                    <td class="mono strong">R-04</td>
+                    <td>Regulator rejects ε-DP as sufficient for GDPR Art. 25 "by design"</td>
+                    <td><span class="badge">Regulatory</span></td>
+                    <td><span class="badge badge-success">Low</span></td>
+                    <td><span class="badge badge-danger">High</span></td>
+                    <td>Engage DPA early; publish methodology; obtain third-party DP audit</td>
+                  </tr>
+                  <tr>
+                    <td class="mono strong">R-05</td>
+                    <td>Free-riding despite revenue-share design</td>
+                    <td><span class="badge">Commercial</span></td>
+                    <td><span class="badge badge-success">Low</span></td>
+                    <td><span class="badge badge-warning">Medium</span></td>
+                    <td>Enforce minimum contribution threshold for continued voting rights; cap weight at 2× median</td>
+                  </tr>
+                  <tr>
+                    <td class="mono strong">R-06</td>
+                    <td>Cloud cost escalation erodes 60% margin</td>
+                    <td><span class="badge">Commercial</span></td>
+                    <td><span class="badge badge-warning">Medium</span></td>
+                    <td><span class="badge badge-warning">Medium</span></td>
+                    <td>Multi-cloud abstraction; model compression; capped round frequency for large consortia</td>
+                  </tr>
+                  <tr>
+                    <td class="mono strong">R-07</td>
+                    <td>Competitive entry by cloud hyperscalers (AWS, Azure)</td>
+                    <td><span class="badge">Commercial</span></td>
+                    <td><span class="badge badge-danger">High</span></td>
+                    <td><span class="badge badge-danger">High</span></td>
+                    <td>Position as compliance-first, not infrastructure-first; partner with regulated industry associations</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+const NAV_LABELS = {
+  command: 'Command Center',
+  training: 'Live Training',
+  experiments: 'Experiments',
+  privacy: 'Privacy & DP',
+  value: 'Value Model',
+};
+
+function goTo(view) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('view-' + view).classList.add('active');
+  const nav = document.querySelector(`.nav-item[data-view="${view}"]`);
+  if (nav) nav.classList.add('active');
+  document.getElementById('crumbs').innerHTML =
+    `<span>FedAnalytics</span><span class="sep">/</span><span class="current">${NAV_LABELS[view]}</span>`;
+  window.scrollTo({ top: 0 });
+
+  if (view === 'training' && !window._topoReady) initTopology();
+  if (view === 'privacy' && !window._privacyReady) initPrivacyView();
+  if (view === 'command' && !window._ccReady) initCommandCenter();
+  if (view === 'value') {
+    initValueModel();
+    requestAnimationFrame(() => {
+      const activePanel = document.querySelector('.bm-panel.active');
+      if (activePanel && activePanel.dataset.panel === 'taxonomy' && !window._positioningChart) {
+        initPositioningChart();
+      }
+      if (activePanel && activePanel.dataset.panel === 'economics' && !window._shareChart) {
+        initShareChart();
+      }
+    });
+  }
+}
+
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => goTo(item.dataset.view));
+});
+
+/* ============================================================
+   CHART DEFAULTS
+   ============================================================ */
+Chart.defaults.color = '#8B949E';
+Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif";
+Chart.defaults.font.size = 11;
+Chart.defaults.borderColor = 'rgba(48,54,61,0.5)';
+
+const GRID_COLOR = 'rgba(48,54,61,0.5)';
+
+/* ============================================================
+   TOASTS
+   ============================================================ */
+function showToast(message, kind = 'info', duration = 3200) {
+  let container = document.querySelector('.toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.className = 'toast-container';
+    document.body.appendChild(container);
+  }
+  const icons = {
+    success: '<svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3.5 3.5L13 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    info: '<svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.5"/><path d="M8 11v-4M8 5.5v.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+    warn: '<svg viewBox="0 0 16 16" fill="none"><path d="M8 2l6 11H2L8 2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 7v3M8 12v.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+  };
+  const el = document.createElement('div');
+  el.className = `toast ${kind}`;
+  el.innerHTML = `<span class="toast-icon">${icons[kind] || icons.info}</span><span>${message}</span>`;
+  container.appendChild(el);
+  setTimeout(() => {
+    el.classList.add('leaving');
+    setTimeout(() => el.remove(), 220);
+  }, duration);
+}
+
+/* ============================================================
+   COMMAND CENTER
+   ============================================================ */
+window._ccReady = false;
+function initCommandCenter() {
+  window._ccReady = true;
+  const ctx = document.getElementById('chart-cc-acc').getContext('2d');
+
+  const rounds = Array.from({ length: 50 }, (_, i) => i + 1);
+  const fedAcc = rounds.map(r => 0.30 + 0.542 * (1 - Math.exp(-0.09 * r)) + (Math.random() - 0.5) * 0.006);
+  const centralAcc = rounds.map(() => 0.8414);
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: rounds,
+      datasets: [
+        {
+          label: 'Federated (FedAvg)',
+          data: fedAcc,
+          borderColor: '#2F81F7',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          tension: 0.35,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          pointHoverBackgroundColor: '#2F81F7',
+          pointHoverBorderColor: '#0D1117',
+          pointHoverBorderWidth: 2,
+        },
+        {
+          label: 'Centralized',
+          data: centralAcc,
+          borderColor: 'rgba(139,148,158,0.55)',
+          borderWidth: 1,
+          borderDash: [5, 4],
+          pointRadius: 0,
+          tension: 0,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 500 },
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1C2128', borderColor: '#30363D', borderWidth: 1,
+          titleColor: '#E6EDF3', bodyColor: '#8B949E', padding: 10,
+          titleFont: { size: 11, weight: '600' }, bodyFont: { size: 11 },
+          callbacks: {
+            title: (items) => `Round ${items[0].label}`,
+            label: (ctx) => `${ctx.dataset.label}: ${(ctx.parsed.y * 100).toFixed(2)}%`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { color: GRID_COLOR, drawBorder: false },
+          ticks: { color: '#6E7681', font: { size: 10 }, maxTicksLimit: 8 },
+        },
+        y: {
+          grid: { color: GRID_COLOR, drawBorder: false },
+          ticks: {
+            color: '#6E7681', font: { size: 10 },
+            callback: (v) => (v * 100).toFixed(0) + '%',
+          },
+          min: 0.30, max: 0.90,
+        },
+      },
+    },
+  });
+
+  setInterval(() => {
+    const el = document.getElementById('cc-time');
+    if (el) el.textContent = 'just now';
+  }, 30000);
+}
+
+/* ============================================================
+   TOPOLOGY
+   ============================================================ */
+const SVG_NS = 'http://www.w3.org/2000/svg';
+let topoState = { clients: [], paths: [], server: null, count: 8, positions: [] };
+
+function initTopology() {
+  window._topoReady = true;
+  const clientCount = parseInt(document.getElementById('cfg-clients').value);
+  buildTopology(clientCount);
+}
+
+function buildTopology(n) {
+  const svg = document.getElementById('topology-svg');
+  const wrap = document.getElementById('topology-wrap');
+  if (!svg || !wrap) return;
+  const W = wrap.clientWidth || 800;
+  const H = wrap.clientHeight || 480;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.innerHTML = '';
+  topoState.clients = [];
+  topoState.paths = [];
+  topoState.count = n;
+
+  const cx = W / 2;
+  const cy = H / 2;
+  const sW = 148, sH = 76;
+  const rx = Math.min(W * 0.36, 320);
+  const ry = Math.min(H * 0.34, 180);
+  const cW = 100, cH = 52;
+
+  const positions = [];
+  for (let i = 0; i < n; i++) {
+    const angle = (i / n) * Math.PI * 2 - Math.PI / 2;
+    positions.push({ x: cx + rx * Math.cos(angle), y: cy + ry * Math.sin(angle), angle, i });
+  }
+
+  positions.forEach((pos, i) => {
+    const dx = cx - pos.x, dy = cy - pos.y;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    const ux = dx / len, uy = dy / len;
+    const exitX = pos.x + ux * (cW / 2 * Math.abs(ux) + cH / 2 * Math.abs(uy));
+    const exitY = pos.y + uy * (cW / 2 * Math.abs(ux) + cH / 2 * Math.abs(uy));
+    const enterX = cx - ux * (sW / 2 * Math.abs(ux) + sH / 2 * Math.abs(uy));
+    const enterY = cy - uy * (sW / 2 * Math.abs(ux) + sH / 2 * Math.abs(uy));
+    const midX = (exitX + enterX) / 2 - uy * 8;
+    const midY = (exitY + enterY) / 2 + ux * 8;
+    const d = `M ${exitX} ${exitY} Q ${midX} ${midY} ${enterX} ${enterY}`;
+
+    const path = document.createElementNS(SVG_NS, 'path');
+    path.setAttribute('d', d);
+    path.setAttribute('class', 'topo-path');
+    path.dataset.index = i;
+    svg.appendChild(path);
+    topoState.paths.push({ el: path, d, exitX, exitY, enterX, enterY });
+  });
+
+  const serverG = document.createElementNS(SVG_NS, 'g');
+  serverG.setAttribute('class', 'topo-server');
+
+  const serverRect = document.createElementNS(SVG_NS, 'rect');
+  serverRect.setAttribute('class', 'topo-server-rect');
+  serverRect.setAttribute('x', cx - sW / 2);
+  serverRect.setAttribute('y', cy - sH / 2);
+  serverRect.setAttribute('width', sW);
+  serverRect.setAttribute('height', sH);
+  serverRect.setAttribute('rx', 10);
+  serverG.appendChild(serverRect);
+
+  const sLabel = document.createElementNS(SVG_NS, 'text');
+  sLabel.setAttribute('class', 'topo-server-label');
+  sLabel.setAttribute('x', cx);
+  sLabel.setAttribute('y', cy - 4);
+  sLabel.textContent = 'Aggregation Server';
+  serverG.appendChild(sLabel);
+
+  const sMeta = document.createElementNS(SVG_NS, 'text');
+  sMeta.setAttribute('class', 'topo-server-meta');
+  sMeta.setAttribute('x', cx);
+  sMeta.setAttribute('y', cy + 14);
+  sMeta.textContent = 'FedAvg · TLS 1.3';
+  serverG.appendChild(sMeta);
+
+  svg.appendChild(serverG);
+  topoState.server = serverG;
+
+  positions.forEach((pos, i) => {
+    const g = document.createElementNS(SVG_NS, 'g');
+    g.setAttribute('class', 'topo-client topo-node');
+    g.dataset.index = i;
+
+    const rect = document.createElementNS(SVG_NS, 'rect');
+    rect.setAttribute('class', 'topo-client-rect');
+    rect.setAttribute('x', pos.x - cW / 2);
+    rect.setAttribute('y', pos.y - cH / 2);
+    rect.setAttribute('width', cW);
+    rect.setAttribute('height', cH);
+    rect.setAttribute('rx', 8);
+    g.appendChild(rect);
+
+    const label = document.createElementNS(SVG_NS, 'text');
+    label.setAttribute('class', 'topo-client-label');
+    label.setAttribute('x', pos.x);
+    label.setAttribute('y', pos.y - 4);
+    label.setAttribute('text-anchor', 'middle');
+    label.textContent = `org-${String(i + 1).padStart(2, '0')}`;
+    g.appendChild(label);
+
+    const meta = document.createElementNS(SVG_NS, 'text');
+    meta.setAttribute('class', 'topo-client-meta');
+    meta.setAttribute('x', pos.x);
+    meta.setAttribute('y', pos.y + 12);
+    meta.setAttribute('text-anchor', 'middle');
+    meta.textContent = `${(5 + Math.floor(Math.random() * 8))}k samples`;
+    g.appendChild(meta);
+
+    svg.appendChild(g);
+    topoState.clients.push(g);
+  });
+
+  topoState.positions = positions;
+}
+
+function firePacket(clientIdx, direction = 'up') {
+  const svg = document.getElementById('topology-svg');
+  const path = topoState.paths[clientIdx];
+  if (!path || !svg) return;
+
+  const packet = document.createElementNS(SVG_NS, 'circle');
+  packet.setAttribute('r', 3);
+  packet.setAttribute('class', direction === 'up' ? 'packet' : 'packet return');
+
+  const motion = document.createElementNS(SVG_NS, 'animateMotion');
+  motion.setAttribute('dur', direction === 'up' ? '0.9s' : '0.7s');
+  motion.setAttribute('fill', 'freeze');
+  motion.setAttribute('path',
+    direction === 'up' ? path.d :
+    `M ${path.enterX} ${path.enterY} Q ${(path.exitX + path.enterX) / 2} ${(path.exitY + path.enterY) / 2} ${path.exitX} ${path.exitY}`
+  );
+
+  packet.appendChild(motion);
+  svg.appendChild(packet);
+
+  setTimeout(() => packet.remove(), direction === 'up' ? 950 : 750);
+}
+
+/* ============================================================
+   TRAINING SIMULATION
+   ============================================================ */
+const trainState = {
+  running: false,
+  round: 0,
+  maxRounds: 50,
+  startTime: null,
+  history: [],
+  epsilon: 0,
+  timer: null,
+  roundsPerSec: 0.55,
+  params: null,
+};
+
+let chartLive = null;
+
+function initLiveChart() {
+  const ctx = document.getElementById('chart-live-acc').getContext('2d');
+  if (chartLive) chartLive.destroy();
+  chartLive = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        label: 'Accuracy',
+        data: [],
+        borderColor: '#2F81F7',
+        backgroundColor: 'rgba(47,129,247,0.08)',
+        borderWidth: 1.75,
+        fill: true,
+        tension: 0.3,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        pointHoverBackgroundColor: '#2F81F7',
+        pointHoverBorderColor: '#0D1117',
+        pointHoverBorderWidth: 2,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 150 },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1C2128', borderColor: '#30363D', borderWidth: 1,
+          titleColor: '#E6EDF3', bodyColor: '#8B949E', padding: 8,
+          titleFont: { size: 11, weight: '600' }, bodyFont: { size: 11 },
+          displayColors: false,
+          callbacks: {
+            title: (items) => `Round ${items[0].label}`,
+            label: (ctx) => `Accuracy: ${(ctx.parsed.y * 100).toFixed(2)}%`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { color: GRID_COLOR, drawBorder: false },
+          ticks: { color: '#6E7681', font: { size: 9 }, maxTicksLimit: 6 },
+        },
+        y: {
+          grid: { color: GRID_COLOR, drawBorder: false },
+          ticks: {
+            color: '#6E7681', font: { size: 9 },
+            callback: (v) => (v * 100).toFixed(0) + '%',
+          },
+          min: 0.30, max: 0.90,
+        },
+      },
+    },
+  });
+}
+
+function computeRunParams() {
+  const clients = parseInt(document.getElementById('cfg-clients').value);
+  const partition = document.getElementById('cfg-partition').value;
+  const dp = document.getElementById('cfg-dp').value;
+  const rounds = parseInt(document.getElementById('cfg-rounds').value);
+
+  let ceiling = 0.8262;
+  let rate = 0.10;
+
+  if (partition === 'dir-05') { ceiling = 0.7431; rate = 0.075; }
+  if (partition === 'dir-01') { ceiling = 0.6854; rate = 0.060; }
+  if (clients === 5) { ceiling -= 0.025; rate *= 0.92; }
+  if (clients === 12) { ceiling += 0.004; }
+  if (clients === 20) { ceiling += 0.008; }
+
+  if (dp === '1.0') { ceiling -= 0.021; rate *= 0.82; }
+  if (dp === '4.0') { ceiling -= 0.004; rate *= 0.94; }
+
+  return { ceiling, rate, clients, rounds, dp, partition };
+}
+
+function formatBytes(bytes) {
+  if (bytes < 1024) return bytes.toFixed(0) + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  if (bytes < 1024 * 1024 * 1024) return (bytes / 1024 / 1024).toFixed(1) + ' MB';
+  return (bytes / 1024 / 1024 / 1024).toFixed(2) + ' GB';
+}
+
+function formatDuration(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+function logEvent(text, level = 'info') {
+  const log = document.getElementById('event-log');
+  if (!log) return;
+  const now = new Date();
+  const ts = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+  const row = document.createElement('div');
+  row.className = 'event-row';
+  row.innerHTML = `
+    <span class="t">${ts}</span>
+    <span class="lvl ${level}">${level === 'ok' ? '✓' : level === 'warn' ? '!' : '·'}</span>
+    <span class="msg">${text}</span>
+  `;
+  log.insertBefore(row, log.firstChild);
+  while (log.children.length > 100) log.removeChild(log.lastChild);
+  document.getElementById('log-count').textContent =
+    `${log.children.length} event${log.children.length !== 1 ? 's' : ''}`;
+}
+
+function setBadge(id, text, kind) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = `<span class="dot"></span>${text}`;
+  el.className = `badge${kind ? ' badge-' + kind : ''}`;
+}
+
+function startRun() {
+  if (trainState.running) return;
+  const params = computeRunParams();
+
+  trainState.running = true;
+  trainState.round = 0;
+  trainState.maxRounds = params.rounds;
+  trainState.startTime = Date.now();
+  trainState.params = params;
+  trainState.epsilon = 0;
+
+  document.getElementById('event-log').innerHTML = '';
+  logEvent(`Run started · <strong>${params.clients} clients · ${params.partition === 'iid' ? 'IID' : params.partition === 'dir-05' ? 'Dirichlet α=0.5' : 'Dirichlet α=0.1'}</strong>${params.dp !== 'off' ? ` · DP ε=${params.dp}` : ''}`, 'info');
+
+  setBadge('run-status-badge', 'Running', 'accent');
+  document.getElementById('btn-run').disabled = true;
+  document.getElementById('btn-run').innerHTML = '<svg viewBox="0 0 16 16" fill="none"><rect x="4" y="3" width="3" height="10" rx="1" fill="currentColor"/><rect x="9" y="3" width="3" height="10" rx="1" fill="currentColor"/></svg>Running…';
+
+  document.getElementById('m-acc').textContent = '—';
+  document.getElementById('m-loss').textContent = '—';
+  document.getElementById('m-eps').textContent = params.dp === 'off' ? 'disabled' : '0.00';
+  document.getElementById('m-active').textContent = `0 / ${params.clients}`;
+  document.getElementById('comm-cumulative').textContent = '0 B';
+  document.getElementById('comm-per-round').textContent = formatBytes(480 * 1024 * params.clients);
+
+  initLiveChart();
+  document.getElementById('run-round').textContent = `0 / ${params.rounds}`;
+  document.getElementById('run-progress').style.width = '0%';
+
+  buildTopology(params.clients);
+
+  stepRound();
+  trainState.timer = setInterval(stepRound, 1000 / trainState.roundsPerSec);
+}
+
+function stepRound() {
+  if (!trainState.running) return;
+  const params = trainState.params;
+  trainState.round++;
+
+  if (trainState.round > trainState.maxRounds) {
+    stopRun(true);
+    return;
+  }
+
+  const n = topoState.clients.length;
+  const stagger = Math.max(30, 400 / n);
+
+  for (let i = 0; i < n; i++) {
+    setTimeout(() => {
+      topoState.clients[i].classList.add('active');
+      topoState.paths[i].el.classList.add('active');
+      firePacket(i, 'up');
+
+      setTimeout(() => {
+        topoState.clients[i].classList.remove('active');
+        topoState.clients[i].classList.add('complete');
+        topoState.paths[i].el.classList.remove('active');
+        topoState.paths[i].el.classList.add('complete');
+        firePacket(i, 'down');
+      }, 400);
+    }, i * stagger);
+  }
+
+  setTimeout(() => {
+    topoState.server.classList.add('active');
+    setTimeout(() => topoState.server.classList.remove('active'), 500);
+  }, n * stagger + 100);
+
+  setTimeout(() => {
+    const r = trainState.round;
+    const base = params.ceiling * (1 - Math.exp(-params.rate * r));
+    const noise = (Math.random() - 0.5) * 0.006;
+    const acc = Math.max(0.30, Math.min(0.90, base + noise));
+
+    trainState.history.push({ round: r, acc });
+
+    if (params.dp !== 'off') {
+      trainState.epsilon += 0.02 + Math.random() * 0.01;
+    }
+
+    document.getElementById('run-round').textContent = `${r} / ${trainState.maxRounds}`;
+    document.getElementById('run-round-sub').textContent = `Round ${r} of ${trainState.maxRounds}`;
+    document.getElementById('run-progress').style.width = `${(r / trainState.maxRounds) * 100}%`;
+
+    const elapsedSec = (Date.now() - trainState.startTime) / 1000;
+    const perRound = elapsedSec / r;
+    const remaining = (trainState.maxRounds - r) * perRound;
+    document.getElementById('run-elapsed').textContent = formatDuration(elapsedSec);
+    document.getElementById('run-eta').textContent = remaining > 0 ? formatDuration(remaining) : '—';
+
+    document.getElementById('m-acc').textContent = (acc * 100).toFixed(2) + '%';
+    document.getElementById('m-loss').textContent = (2.4 - 1.8 * (acc - 0.30) / 0.55 + (Math.random() - 0.5) * 0.05).toFixed(3);
+    document.getElementById('m-active').textContent = `${n} / ${n}`;
+
+    if (params.dp !== 'off') {
+      document.getElementById('m-eps').textContent = trainState.epsilon.toFixed(3);
+      if (trainState.epsilon > parseFloat(params.dp)) {
+        document.getElementById('m-eps').style.color = 'var(--danger)';
+      }
+    }
+
+    const bytesPerRound = 480 * 1024 * n;
+    document.getElementById('comm-cumulative').textContent = formatBytes(bytesPerRound * r);
+
+    if (chartLive) {
+      chartLive.data.labels.push(r);
+      chartLive.data.datasets[0].data.push(acc);
+      chartLive.update('none');
+    }
+
+    if (r === 1) {
+      logEvent(`Round 1 complete · clients reported <strong>${(acc * 100).toFixed(2)}%</strong>`, 'ok');
+    } else if (r % 5 === 0) {
+      const prevAcc = trainState.history[r - 6]?.acc || acc;
+      const delta = ((acc - prevAcc) * 100).toFixed(2);
+      logEvent(`Round ${r} · acc <strong>${(acc * 100).toFixed(2)}%</strong> · Δ=${delta >= 0 ? '+' : ''}${delta} pp`, 'ok');
+    }
+
+    if (r === trainState.maxRounds) stopRun(true);
+  }, n * stagger + 500);
+}
+
+function stopRun(completed = false) {
+  trainState.running = false;
+  if (trainState.timer) clearInterval(trainState.timer);
+
+  document.getElementById('btn-run').disabled = false;
+  document.getElementById('btn-run').innerHTML = '<svg viewBox="0 0 16 16" fill="none"><path d="M4 3l9 5-9 5V3z" fill="currentColor"/></svg>Start Run';
+
+  if (completed) {
+    setBadge('run-status-badge', 'Completed', 'success');
+    const final = trainState.history[trainState.history.length - 1];
+    if (final) logEvent(`Run completed · final accuracy <strong>${(final.acc * 100).toFixed(2)}%</strong>`, 'ok');
+    if (trainState.params.dp !== 'off') {
+      logEvent(`DP audit · spent ε = <strong>${trainState.epsilon.toFixed(3)}</strong> / ${trainState.params.dp}`, 'ok');
+    }
+    showToast(`Run completed · accuracy ${(final ? final.acc * 100 : 0).toFixed(2)}%`, 'success');
+  } else {
+    setBadge('run-status-badge', 'Idle', '');
+  }
+
+  document.getElementById('run-eta').textContent = '—';
+}
+
+function resetRun() {
+  trainState.running = false;
+  if (trainState.timer) clearInterval(trainState.timer);
+  trainState.round = 0;
+  trainState.history = [];
+  trainState.epsilon = 0;
+
+  const n = parseInt(document.getElementById('cfg-clients').value);
+  buildTopology(n);
+
+  document.getElementById('run-round').textContent = '0 / 50';
+  document.getElementById('run-round-sub').textContent = '—';
+  document.getElementById('run-progress').style.width = '0%';
+  document.getElementById('run-elapsed').textContent = '00:00';
+  document.getElementById('run-eta').textContent = '—';
+  document.getElementById('m-acc').textContent = '—';
+  document.getElementById('m-loss').textContent = '—';
+  document.getElementById('m-eps').textContent = '—';
+  document.getElementById('m-eps').style.color = '';
+  document.getElementById('m-active').textContent = '—';
+  document.getElementById('comm-cumulative').textContent = '0 B';
+  document.getElementById('comm-per-round').textContent = '—';
+  document.getElementById('event-log').innerHTML = '<div class="event-row"><span class="t">—</span><span class="lvl info">·</span><span class="msg">Awaiting run start</span></div>';
+  document.getElementById('log-count').textContent = '0 events';
+  document.getElementById('btn-run').disabled = false;
+  document.getElementById('btn-run').innerHTML = '<svg viewBox="0 0 16 16" fill="none"><path d="M4 3l9 5-9 5V3z" fill="currentColor"/></svg>Start Run';
+  setBadge('run-status-badge', 'Idle', '');
+
+  if (chartLive) chartLive.destroy();
+  chartLive = null;
+}
+
+/* ============================================================
+   PRIVACY VIEW
+   ============================================================ */
+window._privacyReady = false;
+function initPrivacyView() {
+  window._privacyReady = true;
+  const ctx = document.getElementById('chart-privacy').getContext('2d');
+  const Amax = 0.8262;
+  const curve = [];
+  for (let e = 0.5; e <= 8.001; e += 0.15) {
+    const loss = 0.075 * Math.exp(-e / 0.9) + 0.004;
+    curve.push({ eps: +e.toFixed(2), acc: Amax - loss });
+  }
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: curve.map(p => p.eps),
+      datasets: [
+        {
+          label: 'FedAvg + DP-SGD',
+          data: curve.map(p => p.acc),
+          borderColor: '#A371F7',
+          backgroundColor: 'rgba(163,113,247,0.06)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.35,
+          pointRadius: 0,
+          pointHoverRadius: 5,
+          pointHoverBackgroundColor: '#A371F7',
+          pointHoverBorderColor: '#0D1117',
+          pointHoverBorderWidth: 2,
+        },
+        {
+          label: 'FedAvg · no DP',
+          data: curve.map(() => 0.8262),
+          borderColor: 'rgba(63,185,80,0.65)',
+          borderWidth: 1.25,
+          borderDash: [5, 4],
+          pointRadius: 0,
+          tension: 0,
+        },
+        {
+          label: 'Centralized',
+          data: curve.map(() => 0.8414),
+          borderColor: 'rgba(139,148,158,0.5)',
+          borderWidth: 1,
+          borderDash: [2, 4],
+          pointRadius: 0,
+          tension: 0,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 500 },
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          display: true, position: 'bottom', align: 'start',
+          labels: { color: '#8B949E', font: { size: 11 }, boxWidth: 12, boxHeight: 2, padding: 16 },
+        },
+        tooltip: {
+          backgroundColor: '#1C2128', borderColor: '#30363D', borderWidth: 1,
+          titleColor: '#E6EDF3', bodyColor: '#8B949E', padding: 10,
+          titleFont: { size: 11, weight: '600' }, bodyFont: { size: 11 },
+          callbacks: {
+            title: (items) => `ε = ${items[0].label}`,
+            label: (ctx) => `${ctx.dataset.label}: ${(ctx.parsed.y * 100).toFixed(2)}%`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { color: GRID_COLOR, drawBorder: false },
+          ticks: {
+            color: '#6E7681', font: { size: 10 },
+            callback: function (val) {
+              const v = this.getLabelForValue(val);
+              return (+v % 1 === 0) ? v : '';
+            },
+          },
+          title: {
+            display: true,
+            text: 'Privacy budget ε  (lower = stronger privacy)',
+            color: '#6E7681', font: { size: 11 }, padding: { top: 8 },
+          },
+        },
+        y: {
+          grid: { color: GRID_COLOR, drawBorder: false },
+          ticks: {
+            color: '#6E7681', font: { size: 10 },
+            callback: (v) => (v * 100).toFixed(0) + '%',
+          },
+          min: 0.72, max: 0.86,
+        },
+      },
+    },
+  });
+
+  const slider = document.getElementById('eps-slider');
+  const update = () => {
+    const eps = parseFloat(slider.value);
+    const loss = 0.075 * Math.exp(-eps / 0.9) + 0.004;
+    const acc = 0.8262 - loss;
+
+    document.getElementById('eps-val').textContent = eps.toFixed(1);
+    document.getElementById('eps-acc').textContent = (acc * 100).toFixed(2) + '%';
+    document.getElementById('eps-loss').textContent = '−' + (loss * 100).toFixed(2) + ' pp';
+
+    const level = document.getElementById('eps-level');
+    if (eps <= 1) { level.textContent = 'Strong'; level.style.color = 'var(--success)'; }
+    else if (eps <= 3) { level.textContent = 'Balanced'; level.style.color = 'var(--accent)'; }
+    else if (eps <= 6) { level.textContent = 'Moderate'; level.style.color = 'var(--warning)'; }
+    else { level.textContent = 'Weak'; level.style.color = 'var(--danger)'; }
+  };
+  slider.addEventListener('input', update);
+  update();
+}
+
+/* ============================================================
+   VALUE MODEL
+   ============================================================ */
+function initValueModel() {
+  const nav = document.getElementById('bm-nav');
+  if (!nav || nav.dataset.wired) return;
+  nav.dataset.wired = '1';
+
+  nav.querySelectorAll('.bm-nav-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      nav.querySelectorAll('.bm-nav-item').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const target = btn.dataset.bm;
+      document.querySelectorAll('.bm-panel').forEach(p => {
+        p.classList.toggle('active', p.dataset.panel === target);
+      });
+      if (target === 'taxonomy' && !window._positioningChart) {
+        requestAnimationFrame(initPositioningChart);
+      }
+      if (target === 'economics' && !window._shareChart) {
+        requestAnimationFrame(initShareChart);
+      }
+    });
+  });
+}
+
+function initPositioningChart() {
+  if (window._positioningChart) return;
+  window._positioningChart = true;
+  const canvas = document.getElementById('chart-positioning');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [
+        { label: 'FedAnalytics artifact', data: [{ x: 3.5, y: 8.5 }], backgroundColor: '#2F81F7', borderColor: '#2F81F7', pointRadius: 10, pointHoverRadius: 12 },
+        { label: 'Centralized SaaS', data: [{ x: 9.0, y: 3.5 }], backgroundColor: '#F85149', pointRadius: 8 },
+        { label: 'On-prem analytics', data: [{ x: 2.0, y: 9.0 }], backgroundColor: '#3FB950', pointRadius: 8 },
+        { label: 'Public marketplace', data: [{ x: 9.5, y: 2.0 }], backgroundColor: '#D29922', pointRadius: 8 },
+        { label: 'Data cooperative', data: [{ x: 5.5, y: 7.0 }], backgroundColor: '#A371F7', pointRadius: 8 },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#8B949E', font: { size: 10 }, boxWidth: 8, boxHeight: 8, usePointStyle: true, padding: 10 } },
+        tooltip: { backgroundColor: '#1C2128', borderColor: '#30363D', borderWidth: 1, titleColor: '#E6EDF3', bodyColor: '#8B949E', padding: 10 },
+      },
+      scales: {
+        x: {
+          min: 0, max: 10,
+          grid: { color: GRID_COLOR },
+          title: { display: true, text: 'Data openness →', color: '#6E7681', font: { size: 11 } },
+          ticks: { color: '#6E7681', font: { size: 10 }, stepSize: 2 },
+        },
+        y: {
+          min: 0, max: 10,
+          grid: { color: GRID_COLOR },
+          title: { display: true, text: 'Privacy strength →', color: '#6E7681', font: { size: 11 } },
+          ticks: { color: '#6E7681', font: { size: 10 }, stepSize: 2 },
+        },
+      },
+    },
+  });
+}
+
+let shareChart = null;
+const SHARE_DEFAULTS = { pool: 448800, share: 22, alpha: 1.4, orgs: 12 };
+
+function computeShapleyWeights(n, alpha) {
+  const base = [];
+  for (let i = 0; i < n; i++) base.push(Math.pow(Math.random(), 1.8) + 0.15);
+  const sum = base.reduce((a, b) => a + b, 0);
+  const normalized = base.map(v => v / sum);
+  const powered = normalized.map(v => Math.pow(v, alpha));
+  const pSum = powered.reduce((a, b) => a + b, 0);
+  return powered.map(v => v / pSum).sort((a, b) => b - a);
+}
+
+function computeGini(values) {
+  const sorted = [...values].sort((a, b) => a - b);
+  const n = sorted.length;
+  const sum = sorted.reduce((a, b) => a + b, 0);
+  if (sum === 0) return 0;
+  let gini = 0;
+  sorted.forEach((v, i) => { gini += (2 * (i + 1) - n - 1) * v; });
+  return gini / (n * sum);
+}
+
+function updateShareChart() {
+  if (!shareChart) return;
+  const pool = parseFloat(document.getElementById('s-pool').value);
+  const sharePct = parseFloat(document.getElementById('s-share').value);
+  const alpha = parseFloat(document.getElementById('s-alpha').value);
+  const orgs = parseInt(document.getElementById('s-orgs').value);
+
+  const weights = computeShapleyWeights(orgs, alpha);
+  const distribution = weights.map(w => (pool * (sharePct / 100)) * w);
+
+  const platform = pool * (1 - sharePct / 100);
+  const avg = distribution.reduce((a, b) => a + b, 0) / orgs;
+  const top = (distribution[0] / (pool * (sharePct / 100))) * 100;
+  const gini = computeGini(distribution);
+
+  document.getElementById('k-platform').textContent = '€' + Math.round(platform).toLocaleString();
+  document.getElementById('k-avg').textContent = '€' + Math.round(avg).toLocaleString();
+  document.getElementById('k-top').textContent = top.toFixed(1) + '%';
+  document.getElementById('k-gini').textContent = gini.toFixed(2);
+
+  const giniEl = document.getElementById('k-gini');
+  if (gini > 0.30) giniEl.style.color = 'var(--danger)';
+  else if (gini > 0.22) giniEl.style.color = 'var(--warning)';
+  else giniEl.style.color = 'var(--success)';
+
+  const labels = distribution.map((_, i) => `org-${String(i + 1).padStart(2, '0')}`);
+  const colors = distribution.map((_, i) => i < 3 ? '#2F81F7' : i < 8 ? 'rgba(47,129,247,0.75)' : 'rgba(47,129,247,0.5)');
+
+  shareChart.data.labels = labels;
+  shareChart.data.datasets[0].data = distribution.map(d => +d.toFixed(0));
+  shareChart.data.datasets[0].backgroundColor = colors;
+  shareChart.update('none');
+}
+
+function initShareChart() {
+  if (window._shareChart) return;
+  window._shareChart = true;
+  const canvas = document.getElementById('chart-share');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const pool = SHARE_DEFAULTS.pool;
+  const sharePct = SHARE_DEFAULTS.share;
+  const alpha = SHARE_DEFAULTS.alpha;
+  const orgs = SHARE_DEFAULTS.orgs;
+  const weights = computeShapleyWeights(orgs, alpha);
+  const distribution = weights.map(w => (pool * (sharePct / 100)) * w);
+
+  shareChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: distribution.map((_, i) => `org-${String(i + 1).padStart(2, '0')}`),
+      datasets: [{
+        label: 'Quarterly revenue share',
+        data: distribution.map(d => +d.toFixed(0)),
+        backgroundColor: distribution.map((_, i) => i < 3 ? '#2F81F7' : i < 8 ? 'rgba(47,129,247,0.75)' : 'rgba(47,129,247,0.5)'),
+        borderRadius: 3,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 300 },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1C2128', borderColor: '#30363D', borderWidth: 1,
+          titleColor: '#E6EDF3', bodyColor: '#8B949E', padding: 10,
+          callbacks: { label: (ctx) => `€${ctx.parsed.y.toLocaleString()}` },
+        },
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#6E7681', font: { size: 10 } } },
+        y: {
+          grid: { color: GRID_COLOR },
+          ticks: { color: '#6E7681', font: { size: 10 }, callback: (v) => '€' + (v / 1000).toFixed(0) + 'k' },
+        },
+      },
+    },
+  });
+
+  const wire = (id, label, fmt) => {
+    const el = document.getElementById(id);
+    const lbl = document.getElementById(label);
+    el.addEventListener('input', () => {
+      lbl.textContent = fmt(el.value);
+      updateShareChart();
+    });
+  };
+  wire('s-pool', 'v-pool', v => '€' + parseInt(v).toLocaleString());
+  wire('s-share', 'v-share', v => parseFloat(v).toFixed(1) + '%');
+  wire('s-alpha', 'v-alpha', v => parseFloat(v).toFixed(1));
+  wire('s-orgs', 'v-orgs', v => v);
+
+  document.getElementById('reset-calc').addEventListener('click', () => {
+    document.getElementById('s-pool').value = SHARE_DEFAULTS.pool;
+    document.getElementById('s-share').value = SHARE_DEFAULTS.share;
+    document.getElementById('s-alpha').value = SHARE_DEFAULTS.alpha;
+    document.getElementById('s-orgs').value = SHARE_DEFAULTS.orgs;
+    document.getElementById('v-pool').textContent = '€' + SHARE_DEFAULTS.pool.toLocaleString();
+    document.getElementById('v-share').textContent = SHARE_DEFAULTS.share.toFixed(1) + '%';
+    document.getElementById('v-alpha').textContent = SHARE_DEFAULTS.alpha.toFixed(1);
+    document.getElementById('v-orgs').textContent = SHARE_DEFAULTS.orgs;
+    updateShareChart();
+    showToast('Simulator parameters reset', 'info', 2000);
+  });
+
+  updateShareChart();
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  initCommandCenter();
+
+  const btnRun = document.getElementById('btn-run');
+  const btnReset = document.getElementById('btn-reset');
+  if (btnRun) btnRun.addEventListener('click', startRun);
+  if (btnReset) btnReset.addEventListener('click', resetRun);
+  const cfgClients = document.getElementById('cfg-clients');
+  if (cfgClients) {
+    cfgClients.addEventListener('change', () => {
+      if (!trainState.running) resetRun();
+    });
+  }
+
+  let rt;
+  window.addEventListener('resize', () => {
+    clearTimeout(rt);
+    rt = setTimeout(() => {
+      if (document.getElementById('view-training').classList.contains('active')) {
+        if (!trainState.running) {
+          const n = parseInt(document.getElementById('cfg-clients').value);
+          buildTopology(n);
+        }
+      }
+    }, 200);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (!e.metaKey && !e.ctrlKey && !e.target.matches('input, select, textarea')) {
+      const views = ['command', 'training', 'experiments', 'privacy', 'value'];
+      const idx = parseInt(e.key) - 1;
+      if (idx >= 0 && idx < views.length) goTo(views[idx]);
+    }
+  });
+
+  setTimeout(() => showToast('Federated learning environment ready', 'success', 2800), 600);
+});
+</script>
+
+</body>
+</html>
